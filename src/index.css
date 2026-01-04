@@ -1,0 +1,16 @@
+@import "tailwindcss";
+
+@theme {
+  /* This adds our custom Hive colors */
+  --color-hive: #E31337;
+  --color-dark-100: #1e1e1e;
+  --color-dark-200: #121212;
+}
+
+/* Custom global styles */
+body {
+  background-color: #f8fafc;
+  /* slight grey */
+  color: #1e293b;
+  /* slate-800 equivalent */
+}
