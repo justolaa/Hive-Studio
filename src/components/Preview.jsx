@@ -6,31 +6,65 @@ const HIVE_STYLES = `
     /* Basic Hive Settings */
     body { 
       font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; 
-      color: #212529; /* Darker text for visibility */
+      color: #212529; 
       padding: 20px; 
       background-color: #fff;
       line-height: 1.6;
     }
     
-    /* Column Utilities - FORCED WIDTHS */
-    .pull-left { float: left; width: 48%; padding-right: 1%; box-sizing: border-box; }
-    .pull-right { float: right; width: 48%; padding-left: 1%; box-sizing: border-box; }
+    /* Columns */
+    .pull-left { 
+      float: left; 
+      width: 48%; 
+      padding-right: 10px; 
+      box-sizing: border-box; 
+      word-wrap: break-word; 
+    }
     
-    /* Clearfix ensures the text below columns doesn't overlap */
-    .clearfix::after { content: ""; clear: both; display: table; }
+    .pull-right { 
+      float: right; 
+      width: 48%; 
+      padding-left: 10px; 
+      box-sizing: border-box; 
+      word-wrap: break-word; 
+    }
     
+    /* BLOCKQUOTE STYLING (Hive Style) */
+    blockquote {
+      border-left: 4px solid #e0e0e0; /* The grey bar */
+      padding-left: 15px;
+      color: #666; /* Slightly lighter text for translation */
+      margin-bottom: 4%; /* Remove default huge margins */
+      font-size: 1rem; /* Keep text size normal, not huge */
+      background: transparent;
+    }
+
     /* Images */
     img { max-width: 100%; height: auto; border-radius: 4px; display: block; }
     .cinephile-mode img { margin: 15px auto; }
     .standard-mode img { margin: 15px 0; }
     
-    /* Typography */
-    h1, h2 { border-bottom: 1px solid #eee; padding-bottom: 10px; margin-top: 30px; margin-bottom: 20px; }
+    /* HEADERS */
+    h1, h2, h3 { 
+      margin-top: 30px; 
+      margin-bottom: 20px; 
+      clear: both; 
+    }
+
+    /* THE SEPARATOR */
+    hr {
+      margin-top: 20px;
+      margin-bottom: 20px;
+      border: 0;
+      border-top: 1px solid #cccccc; 
+      clear: both;
+    }
+
     p { margin-bottom: 1rem; }
   </style>
 `;
 
-export default function Preview({ htmlContent }) {
+export default function Preview({ htmlContent, extraCss }) {
   const iframeRef = useRef(null);
 
   useEffect(() => {
@@ -40,13 +74,19 @@ export default function Preview({ htmlContent }) {
       doc.write(`
         <!DOCTYPE html>
         <html>
-          <head>${HIVE_STYLES}</head>
+          <head>
+            ${HIVE_STYLES}
+            <style>
+              /* INJECT DYNAMIC CSS HERE */
+              ${extraCss || ''}
+            </style>
+          </head>
           <body>${htmlContent || '<p style="color:#999; text-align:center; margin-top:50px;">Preview area...</p>'}</body>
         </html>
       `);
       doc.close();
     }
-  }, [htmlContent]);
+  }, [htmlContent, extraCss]); // Re-render when content OR css changes
 
   return (
     <div className="w-full h-full bg-white rounded-lg border border-gray-200 shadow-inner overflow-hidden flex flex-col">
