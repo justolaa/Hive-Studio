@@ -1,12 +1,13 @@
 import { supabase } from './supabase';
 
-export async function polishText(rawText) {
+export async function polishText(rawText, templateId) { // Changed name to Id
   console.log("Magic Brush: Calling Edge Function...");
 
   const { data, error } = await supabase.functions.invoke('magic-brush', {
     body: { 
       action: 'polish', 
-      text: rawText
+      text: rawText, 
+      templateId: templateId // Send ID now
     }
   });
 

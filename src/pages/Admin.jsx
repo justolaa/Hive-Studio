@@ -20,18 +20,18 @@ export default function Admin() {
   // Generator State
   const [rawInput, setRawInput] = useState('');
   const [isGenerating, setIsGenerating] = useState(false);
-  const [activeTab, setActiveTab] = useState('generate'); // 'generate' | 'library'
+  const [activeTab, setActiveTab] = useState('generate');
   
   // The Draft Template
   const [draft, setDraft] = useState({
-    id: null, // If ID exists, we are UPDATING, else INSERTING
+    id: null,
     name: '',
     category: 'General',
     container_class: '',
     css_code: '',
     skeleton: '',
     description: '',
-    thumbnail_url: '' // NEW FIELD
+    thumbnail_url: ''
   });
 
   const [previewHtml, setPreviewHtml] = useState('');
@@ -66,9 +66,8 @@ export default function Admin() {
     setIsGenerating(true);
     try {
       const result = await generateTemplateFromInput(rawInput);
-      // Reset ID to null so we create a NEW template, not update an old one
       setDraft(prev => ({ ...prev, ...result, id: null }));
-      setActiveTab('edit'); // Switch to edit view to see result
+      setActiveTab('edit'); 
     } catch (err) {
       alert("AI Error: " + err.message);
     } finally {
@@ -85,18 +84,16 @@ export default function Admin() {
         left: 'col-6',
         right: 'col-6'
       };
-      // Use the parser
       const html = await parseToHiveHtml(draft.skeleton, config);
       setPreviewHtml(html);
     };
     renderPreview();
   }, [draft.skeleton, draft.container_class]);
 
-  // 4. SAVE (Insert or Update)
+  // 4. SAVE
   const handleSave = async () => {
     if (!draft.name || !draft.skeleton) return alert("Missing data");
     
-    // Default config if missing
     const finalData = {
       name: draft.name,
       category: draft.category,
@@ -105,17 +102,15 @@ export default function Admin() {
       skeleton: draft.skeleton,
       description: draft.description,
       thumbnail_url: draft.thumbnail_url,
+      ai_prompt: draft.ai_prompt,
       config: { dualWrapper: "text-justify", left: "pull-left", right: "pull-right" }
     };
 
     let error;
-    
     if (draft.id) {
-      // UPDATE existing
       const res = await supabase.from('templates').update(finalData).eq('id', draft.id);
       error = res.error;
     } else {
-      // INSERT new
       const res = await supabase.from('templates').insert([finalData]);
       error = res.error;
     }
@@ -124,20 +119,17 @@ export default function Admin() {
       alert("Error saving: " + error.message);
     } else {
       alert(draft.id ? "Template Updated!" : "Template Created!");
-      fetchTemplates(); // Refresh list
-      // Don't clear draft immediately so user can keep tweaking if they want
+      fetchTemplates();
     }
   };
 
   // 5. DELETE
   const handleDelete = async (id) => {
-    if (!confirm("Are you sure you want to delete this template? This cannot be undone.")) return;
-    
+    if (!confirm("Delete this template?")) return;
     const { error } = await supabase.from('templates').delete().eq('id', id);
     if (error) alert("Error deleting: " + error.message);
     else {
       fetchTemplates();
-      // If we deleted the active draft, clear the form
       if (draft.id === id) resetDraft();
     }
   };
@@ -145,58 +137,81 @@ export default function Admin() {
   // 6. LOAD FOR EDITING
   const handleEdit = (template) => {
     setDraft(template);
-    // Switch to Generate tab but keep form visible? No, usually side by side.
-    // We don't need to change tabs because the list is always visible now.
   };
 
   const resetDraft = () => {
-    setDraft({ id: null, name: '', category: 'General', container_class: '', css_code: '', skeleton: '', description: '', thumbnail_url: '' });
+    setDraft({ id: null, name: '', ai_prompt: '', category: 'General', container_class: '', css_code: '', skeleton: '', description: '', thumbnail_url: '' });
     setRawInput('');
   };
 
+  // --- LOGIN SCREEN ---
   if (!session) {
     return (
-      <div className="h-screen flex items-center justify-center bg-gray-50">
-        <form onSubmit={handleLogin} className="bg-white p-8 rounded-xl shadow-lg border border-gray-200 w-96">
-          <h1 className="text-2xl font-bold text-hive mb-6 text-center">Admin Login</h1>
-          <input className="w-full p-3 border rounded mb-4" type="email" placeholder="Admin Email" value={email} onChange={(e) => setEmail(e.target.value)} />
-          <input className="w-full p-3 border rounded mb-6" type="password" placeholder="Password" value={password} onChange={(e) => setPassword(e.target.value)} />
-          <button disabled={authLoading} className="w-full bg-hive text-white py-3 rounded-lg font-bold">{authLoading ? "Checking..." : "Enter Studio"}</button>
+      <div className="h-screen flex items-center justify-center bg-bg-app font-sans">
+        <form onSubmit={handleLogin} className="bg-bg-panel p-8 rounded-xl shadow-2xl border border-ui-border w-96">
+          <div className="flex justify-center mb-6">
+            <div className="bg-brand-primary/10 p-3 rounded-xl border border-brand-primary/20">
+               <Sparkles className="text-brand-primary" size={32} />
+            </div>
+          </div>
+          <h1 className="text-2xl font-bold text-text-primary mb-2 text-center">Admin Access</h1>
+          <p className="text-text-muted text-xs text-center mb-6 uppercase tracking-widest">Authorized Personnel Only</p>
+          
+          <input className="w-full p-3 bg-bg-editor border border-ui-border rounded-lg mb-4 text-text-primary focus:outline-none focus:border-brand-primary transition" type="email" placeholder="Admin Email" value={email} onChange={(e) => setEmail(e.target.value)} />
+          <input className="w-full p-3 bg-bg-editor border border-ui-border rounded-lg mb-6 text-text-primary focus:outline-none focus:border-brand-primary transition" type="password" placeholder="Password" value={password} onChange={(e) => setPassword(e.target.value)} />
+          
+          <button disabled={authLoading} className="w-full bg-brand-primary hover:bg-brand-soft text-white py-3 rounded-lg font-bold transition shadow-lg shadow-brand-primary/20">
+            {authLoading ? "Verifying..." : "Enter Factory"}
+          </button>
         </form>
       </div>
     );
   }
 
+  // --- ADMIN DASHBOARD ---
   return (
-    <div className="h-screen bg-gray-50 flex flex-col">
-      <header className="bg-white border-b px-6 py-3 flex justify-between items-center shadow-sm shrink-0">
-        <h1 className="text-xl font-bold text-gray-800">🏭 Template Factory</h1>
-        <div className="flex gap-4">
-          <button onClick={() => supabase.auth.signOut()} className="flex items-center gap-2 text-red-500 text-sm font-bold"><LogOut size={16}/> Logout</button>
+    <div className="h-screen bg-bg-app flex flex-col font-sans text-text-primary">
+      
+      {/* HEADER */}
+      <header className="bg-bg-panel border-b border-ui-border px-6 py-3 flex justify-between items-center shadow-md shrink-0">
+        <div className="flex items-center gap-3">
+          <div className="bg-brand-accent/10 p-1.5 rounded-lg">
+            <Sparkles className="text-brand-accent" size={18}/>
+          </div>
+          <h1 className="text-lg font-bold text-text-primary tracking-tight">Template Factory</h1>
         </div>
+        <button onClick={() => supabase.auth.signOut()} className="flex items-center gap-2 text-text-muted hover:text-brand-primary text-sm font-medium transition">
+          <LogOut size={16}/> Logout
+        </button>
       </header>
 
       <main className="flex-1 flex overflow-hidden">
         
-        {/* COL 1: LIBRARY (Existing Templates) */}
-        <div className="w-64 bg-white border-r flex flex-col shrink-0">
-          <div className="p-4 border-b bg-gray-50 flex justify-between items-center">
-            <span className="text-xs font-bold text-gray-500">LIBRARY ({templates.length})</span>
-            <button onClick={resetDraft} className="p-1 hover:bg-white rounded text-hive" title="New Template"><Plus size={16}/></button>
+        {/* COL 1: LIBRARY */}
+        <div className="w-64 bg-bg-panel border-r border-ui-border flex flex-col shrink-0">
+          <div className="p-4 border-b border-ui-border bg-bg-panel-soft flex justify-between items-center">
+            <span className="text-xs font-bold text-text-muted tracking-wider">LIBRARY ({templates.length})</span>
+            <button onClick={resetDraft} className="p-1 hover:bg-bg-editor rounded text-brand-primary transition" title="New Template"><Plus size={16}/></button>
           </div>
-          <div className="flex-1 overflow-y-auto">
+          <div className="flex-1 overflow-y-auto custom-scrollbar">
             {loadingTemplates ? (
-              <div className="p-4 text-center"><Loader2 className="animate-spin mx-auto"/></div>
+              <div className="p-4 text-center"><Loader2 className="animate-spin mx-auto text-brand-primary"/></div>
             ) : (
               templates.map(t => (
-                <div key={t.id} className={`p-3 border-b flex justify-between items-center hover:bg-gray-50 cursor-pointer ${draft.id === t.id ? 'bg-blue-50 border-l-4 border-l-blue-500' : ''}`} onClick={() => handleEdit(t)}>
+                <div 
+                  key={t.id} 
+                  className={`p-3 border-b border-ui-border/50 flex justify-between items-center cursor-pointer transition
+                    ${draft.id === t.id ? 'bg-brand-primary/10 border-l-4 border-l-brand-primary' : 'hover:bg-bg-panel-soft text-text-secondary'}
+                  `} 
+                  onClick={() => handleEdit(t)}
+                >
                   <div className="truncate flex-1">
-                    <div className="font-bold text-sm text-gray-700 truncate">{t.name}</div>
-                    <div className="text-[10px] text-gray-400">{t.category}</div>
+                    <div className={`font-bold text-sm truncate ${draft.id === t.id ? 'text-brand-primary' : 'text-text-primary'}`}>{t.name}</div>
+                    <div className="text-[10px] opacity-60">{t.category}</div>
                   </div>
                   <button 
                     onClick={(e) => { e.stopPropagation(); handleDelete(t.id); }} 
-                    className="p-2 text-gray-400 hover:text-red-500 hover:bg-white rounded"
+                    className="p-2 text-text-muted hover:text-brand-primary hover:bg-bg-editor rounded transition"
                   >
                     <Trash2 size={14} />
                   </button>
@@ -206,78 +221,103 @@ export default function Admin() {
           </div>
         </div>
 
-        {/* COL 2: GENERATOR & FORM */}
-        <div className="w-1/3 flex flex-col border-r bg-gray-50 overflow-y-auto">
+        
+
+        {/* COL 2: WORKBENCH */}
+        <div className="w-1/3 flex flex-col border-r border-ui-border bg-bg-app overflow-y-auto custom-scrollbar">
           
-          {/* AI Section */}
-          <div className="p-4 border-b bg-white">
-            <label className="text-xs font-bold text-gray-400 mb-2 flex items-center gap-2">
-              <Sparkles size={12} className="text-purple-500"/> AI GENERATOR
+          {/* AI Generator Box */}
+          <div className="p-4 border-b border-ui-border bg-bg-panel">
+            <label className="text-xs font-bold text-brand-accent mb-2 flex items-center gap-2">
+              <Sparkles size={12}/> AI ARCHITECT
             </label>
-            <div className="flex gap-2">
-              <input 
-                className="flex-1 p-2 text-xs border rounded bg-gray-50"
-                placeholder="Paste HTML source code here..."
+            <div className="flex flex-col gap-2">
+              <textarea 
+                className="w-full p-3 text-xs border border-ui-border rounded-lg bg-bg-editor text-text-primary focus:outline-none focus:border-brand-accent resize-none h-20 placeholder:text-text-muted/50"
+                placeholder="Paste HTML source code or describe a style..."
                 value={rawInput}
                 onChange={(e) => setRawInput(e.target.value)}
               />
               <button 
                 onClick={handleAnalyze}
                 disabled={isGenerating}
-                className="bg-purple-600 text-white px-3 py-2 rounded text-xs font-bold hover:bg-purple-700 disabled:opacity-50"
+                className="bg-brand-accent text-white py-2 rounded-lg text-xs font-bold hover:bg-brand-accent/80 disabled:opacity-50 transition flex justify-center items-center gap-2"
               >
-                {isGenerating ? <Loader2 size={14} className="animate-spin"/> : "Generate"}
+                {isGenerating ? <Loader2 size={14} className="animate-spin"/> : "Generate Template"}
               </button>
             </div>
           </div>
 
-          {/* Edit Form */}
-          <div className="p-4 flex-1 flex flex-col gap-3">
+          {/* Manual Edit Form */}
+          <div className="p-4 flex-1 flex flex-col gap-4">
             <div className="flex justify-between items-center">
-               <label className="text-xs font-bold text-gray-400">EDIT DETAILS</label>
-               {draft.id && <span className="text-xs bg-blue-100 text-blue-600 px-2 py-0.5 rounded">Editing Mode</span>}
+               <label className="text-xs font-bold text-text-muted uppercase tracking-wider">Configuration</label>
+               {draft.id && <span className="text-[10px] bg-blue-500/10 text-blue-400 px-2 py-0.5 rounded border border-blue-500/20">EDITING ID: {draft.id.slice(0,4)}...</span>}
             </div>
 
-            <input className="p-2 border rounded text-sm" placeholder="Template Name" value={draft.name} onChange={e => setDraft({...draft, name: e.target.value})} />
-            
-            <div className="flex gap-2">
-              <input className="flex-1 p-2 border rounded text-sm" placeholder="Category" value={draft.category} onChange={e => setDraft({...draft, category: e.target.value})} />
-              <input className="flex-1 p-2 border rounded text-sm font-mono text-red-600" placeholder=".class-name" value={draft.container_class} onChange={e => setDraft({...draft, container_class: e.target.value})} />
-            </div>
+            <div className="space-y-3">
+              <input className="w-full p-2 bg-bg-editor border border-ui-border rounded text-sm text-text-primary focus:border-brand-primary focus:outline-none" placeholder="Template Name" value={draft.name} onChange={e => setDraft({...draft, name: e.target.value})} />
+              
+              <div className="flex gap-2">
+                <input className="flex-1 p-2 bg-bg-editor border border-ui-border rounded text-sm text-text-primary focus:border-brand-primary focus:outline-none" placeholder="Category" value={draft.category} onChange={e => setDraft({...draft, category: e.target.value})} />
+                <input className="flex-1 p-2 bg-bg-editor border border-ui-border rounded text-sm text-brand-soft font-mono focus:border-brand-primary focus:outline-none" placeholder=".class-name" value={draft.container_class} onChange={e => setDraft({...draft, container_class: e.target.value})} />
+              </div>
 
-            {/* THUMBNAIL INPUT (NEW) */}
-            <div className="flex gap-2 items-center">
-              <div className="bg-gray-200 p-2 rounded text-gray-500"><ImageIcon size={16}/></div>
-              <input 
-                className="flex-1 p-2 border rounded text-sm text-gray-600" 
-                placeholder="Thumbnail URL (https://...)" 
-                value={draft.thumbnail_url || ''} 
-                onChange={e => setDraft({...draft, thumbnail_url: e.target.value})} 
+               {/* --- NEW FIELD: AI INSTRUCTIONS --- */}
+            <div>
+              <label className="text-[10px] font-bold text-brand-accent mb-1 block flex items-center gap-1">
+                <Sparkles size={10}/> AI FORMATTING RULES
+              </label>
+              <textarea 
+                className="w-full h-24 p-2 bg-bg-editor border border-ui-border rounded text-xs text-text-secondary focus:border-brand-accent focus:outline-none resize-none placeholder:text-text-muted/30"
+                placeholder="Specific rules for the AI (e.g. 'Use pull-left for images', 'Wrap tables in divs')"
+                value={draft.ai_prompt || ''} 
+                onChange={e => setDraft({...draft, ai_prompt: e.target.value})} 
               />
             </div>
-            {draft.thumbnail_url && (
-              <div className="h-20 w-full bg-gray-200 rounded overflow-hidden relative border">
-                <img src={draft.thumbnail_url} className="w-full h-full object-cover" alt="Preview" onError={(e) => e.target.style.display = 'none'} />
-                <span className="absolute bottom-1 right-1 bg-black/50 text-white text-[10px] px-1 rounded">Card Preview</span>
+
+              {/* Thumbnail */}
+              <div className="space-y-1">
+                <div className="flex gap-2 items-center bg-bg-editor border border-ui-border rounded p-1">
+                  <div className="p-1.5 rounded bg-bg-panel text-text-muted"><ImageIcon size={14}/></div>
+                  <input 
+                    className="flex-1 bg-transparent text-sm text-text-primary focus:outline-none" 
+                    placeholder="Thumbnail URL..." 
+                    value={draft.thumbnail_url || ''} 
+                    onChange={e => setDraft({...draft, thumbnail_url: e.target.value})} 
+                  />
+                </div>
+                {draft.thumbnail_url && (
+                  <div className="h-24 w-full bg-bg-panel rounded-lg overflow-hidden border border-ui-border relative">
+                    <img src={draft.thumbnail_url} className="w-full h-full object-cover opacity-80" alt="Preview" onError={(e) => e.target.style.display = 'none'} />
+                  </div>
+                )}
               </div>
-            )}
 
-            <label className="text-xs font-bold text-gray-400 mt-2">CSS CODE</label>
-            <textarea className="h-32 p-2 border rounded font-mono text-xs" value={draft.css_code} onChange={e => setDraft({...draft, css_code: e.target.value})} />
+              {/* Code Areas */}
+              <div>
+                <label className="text-[10px] font-bold text-text-muted mb-1 block">CSS RULES</label>
+                <textarea className="w-full h-32 p-3 bg-bg-editor border border-ui-border rounded font-mono text-xs text-green-400 focus:outline-none focus:border-brand-primary" value={draft.css_code} onChange={e => setDraft({...draft, css_code: e.target.value})} />
+              </div>
 
-            <label className="text-xs font-bold text-gray-400 mt-2">SKELETON TEXT</label>
-            <textarea className="flex-1 min-h-[200px] p-2 border rounded font-mono text-xs" value={draft.skeleton} onChange={e => setDraft({...draft, skeleton: e.target.value})} />
+              <div>
+                <label className="text-[10px] font-bold text-text-muted mb-1 block">SKELETON HTML</label>
+                <textarea className="w-full h-48 p-3 bg-bg-editor border border-ui-border rounded font-mono text-xs text-blue-300 focus:outline-none focus:border-brand-primary" value={draft.skeleton} onChange={e => setDraft({...draft, skeleton: e.target.value})} />
+              </div>
             
-            <button onClick={handleSave} className="mt-2 flex justify-center items-center gap-2 bg-green-600 text-white py-3 rounded-lg font-bold hover:bg-green-700 transition shadow-sm">
-              <Save size={18} /> {draft.id ? "Update Template" : "Save New Template"}
-            </button>
+              <button onClick={handleSave} className="w-full flex justify-center items-center gap-2 bg-brand-primary text-white py-3 rounded-lg font-bold hover:bg-brand-soft transition shadow-lg shadow-brand-primary/20">
+                <Save size={18} /> {draft.id ? "Update Template" : "Save New Template"}
+              </button>
+            </div>
           </div>
         </div>
 
-        {/* COL 3: LIVE PREVIEW */}
-        <div className="flex-1 p-4 bg-gray-200 flex flex-col border-l">
-          <label className="text-xs font-bold text-gray-500 mb-2">LIVE PREVIEW</label>
-          <div className="flex-1 shadow-lg">
+        {/* COL 3: PREVIEW */}
+        <div className="flex-1 p-6 bg-bg-panel-soft flex flex-col border-l border-ui-border">
+          <label className="text-xs font-bold text-text-muted mb-3 uppercase tracking-wider flex items-center gap-2">
+            <span className="w-2 h-2 rounded-full bg-status-success"></span> Live Preview
+          </label>
+          <div className="flex-1 shadow-2xl rounded-lg overflow-hidden border border-ui-border">
             <Preview htmlContent={previewHtml} extraCss={draft.css_code} />
           </div>
         </div>

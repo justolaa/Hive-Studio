@@ -8,21 +8,17 @@ import HelpModal from '../components/HelpModal';
 import TemplateGallery from '../components/TemplateGallery';
 import LoginButton from '../components/LoginButton';
 import PublishModal from '../components/PublishModal';
-import { publishPost} from '../lib/hive';
-import { Copy, Smartphone, Monitor, Trash2, FileText, HelpCircle, Loader2, LayoutTemplate, Send } from 'lucide-react'; 
+import { publishPost } from '../lib/hive';
 import { polishText } from '../lib/magic';
+import { Copy, Smartphone, Monitor, Trash2, FileText, HelpCircle, Loader2, LayoutTemplate, Send, Menu } from 'lucide-react'; 
+import { Link } from 'react-router-dom';
 
-
-export default function Home() {const textareaRef = useRef(null);
+export default function Home() {
+  const textareaRef = useRef(null);
   
-  // State
-  const [isMagicLoading, setIsMagicLoading] = useState(false);
+  // --- STATE ---
   const [templates, setTemplates] = useState([]);
   const [loadingTemplates, setLoadingTemplates] = useState(true);
-  // Add these with your other states
-const [username, setUsername] = useState(localStorage.getItem('hive_user') || '');
-const [isPublishModalOpen, setIsPublishModalOpen] = useState(false);
-const [isPublishing, setIsPublishing] = useState(false);
   
   const [selectedTemplate, setSelectedTemplate] = useState(() => {
     return localStorage.getItem('hive-studio-template') || '';
@@ -34,20 +30,18 @@ const [isPublishing, setIsPublishing] = useState(false);
 
   const [isMobilePreview, setIsMobilePreview] = useState(false);
   const [isHelpOpen, setIsHelpOpen] = useState(false);
-  const [isGalleryOpen, setIsGalleryOpen] = useState(false); // NEW STATE
+  const [isGalleryOpen, setIsGalleryOpen] = useState(false);
   const [outputHtml, setOutputHtml] = useState('');
+  const [username, setUsername] = useState(localStorage.getItem('hive_user') || '');
+  const [isPublishModalOpen, setIsPublishModalOpen] = useState(false);
+  const [isPublishing, setIsPublishing] = useState(false);
+  const [isMagicLoading, setIsMagicLoading] = useState(false);
 
-  // Load Templates
+  // --- EFFECTS ---
   useEffect(() => {
     async function loadTemplates() {
-      const { data, error } = await supabase
-        .from('templates')
-        .select('*')
-        .order('name');
-        
-      if (error) {
-        console.error("Error loading templates:", error);
-      } else {
+      const { data, error } = await supabase.from('templates').select('*').order('name');
+      if (!error) {
         setTemplates(data);
         if (data.length > 0 && !localStorage.getItem('hive-studio-template')) {
           setSelectedTemplate(data[0].id);
@@ -58,13 +52,11 @@ const [isPublishing, setIsPublishing] = useState(false);
     loadTemplates();
   }, []);
 
-  // Save State
   useEffect(() => {
     localStorage.setItem('hive-studio-draft', input);
     localStorage.setItem('hive-studio-template', selectedTemplate);
   }, [input, selectedTemplate]);
 
-  // Parser
   useEffect(() => {
     const process = async () => {
       const active = templates.find(t => t.id === selectedTemplate) || templates[0];
@@ -77,43 +69,7 @@ const [isPublishing, setIsPublishing] = useState(false);
     if (templates.length > 0) process();
   }, [input, selectedTemplate, templates]);
 
-
-  // Actions
-  const handleLogin = (user) => {
-  setUsername(user);
-  localStorage.setItem('hive_user', user);
-};
-
-const handleLogout = () => {
-  setUsername('');
-  localStorage.removeItem('hive_user');
-};
-
-const handlePublish = async (title, tags) => {
-    if (!username) return alert("Please login first!");
-    
-    setIsPublishing(true);
-    try {
-      // Use our new helper function
-      // We pass 'outputHtml' because that is the formatted code
-      const result = await publishPost(username, title, outputHtml, tags);
-
-      alert(`Published successfully! 🚀\nPermlink: ${result.permlink}`);
-      setIsPublishModalOpen(false);
-      
-      // Optional: Open the post in a new tab (PeakD)
-      if(confirm("Open post in PeakD?")) {
-        window.open(`https://peakd.com/@${username}/${result.permlink}`, '_blank');
-      }
-      
-    } catch (error) {
-      console.error(error);
-      alert("Publish failed: " + error.message);
-    } finally {
-      setIsPublishing(false);
-    }
-  };
-
+  // --- HANDLERS ---
   const insertDivider = (url) => {
     const htmlCode = `\n<center><img src="${url}" /></center>\n`;
     const textarea = textareaRef.current;
@@ -153,62 +109,68 @@ const handlePublish = async (title, tags) => {
   };
 
   const loadBlueprint = () => {
-    if (confirm("Replace text with this template's blueprint?")) {
+    if (confirm("Replace current text with this template's blueprint?")) {
       const t = templates.find(temp => temp.id === selectedTemplate);
       if (t && t.skeleton) setInput(t.skeleton);
+    }
+  };
+
+  const handleLogin = (user) => {
+    setUsername(user);
+    localStorage.setItem('hive_user', user);
+  };
+
+  const handleLogout = () => {
+    setUsername('');
+    localStorage.removeItem('hive_user');
+  };
+
+  const handlePublish = async (title, tags) => {
+    if (!username) return alert("Please login first!");
+    setIsPublishing(true);
+    try {
+      const result = await publishPost(username, title, outputHtml, tags);
+      alert(`Published successfully! 🚀\nPermlink: ${result.permlink}`);
+      setIsPublishModalOpen(false);
+    } catch (error) {
+      alert("Publish failed: " + error.message);
+    } finally {
+      setIsPublishing(false);
     }
   };
 
   const handleMagic = async () => {
     if (!input.trim()) return alert("Please write some text first!");
     
-    // 1. Initial Confirmation
+    // Custom confirm dialog for Magic Brush
     if (!confirm("✨ Magic Brush will:\n1. Auto-format your text\n2. Insert relevant dividers\n3. Suggest the best template\n\nProceed?")) return;
 
     setIsMagicLoading(true);
     try {
-      // 2. Call the AI
-      const aiResponse = await polishText(input);
+      const aiResponse = await polishText(input, selectedTemplate || "standard"); 
       
-      // 3. Apply the Text formatting immediately
       setInput(aiResponse.formatted_text);
 
-      // 4. Check for Template Suggestion
-      // If the AI suggests a different template than the one currently selected...
       if (aiResponse.suggested_template_id && aiResponse.suggested_template_id !== selectedTemplate) {
-        
-        const switchMsg = `✨ AI Analysis Complete!\n\nTopic Detected: ${aiResponse.topic_detected}\nSuggested Template: ${aiResponse.suggested_template_name}\n\nDo you want to switch to this template?`;
-        
+        const switchMsg = `✨ AI Analysis: Topic Detected [${aiResponse.topic_detected}]\nSuggested Template: ${aiResponse.suggested_template_name}\n\nSwitch template now?`;
         if (confirm(switchMsg)) {
           setSelectedTemplate(aiResponse.suggested_template_id);
         }
-      } else {
-        // Just notify success if no template switch needed
-        alert(`✨ Magic Polish Complete! (Topic: ${aiResponse.topic_detected})`);
       }
-
     } catch (error) {
-      console.error(error);
       alert("AI Error: " + error.message);
     } finally {
       setIsMagicLoading(false);
     }
   };
-  // Helper to get active template name
+
   const activeTemplateName = templates.find(t => t.id === selectedTemplate)?.name || "Loading...";
 
+  // --- NEW UI RENDER ---
   return (
-    <div className="h-screen flex flex-col bg-gray-50">
+    <div className="h-screen flex flex-col bg-bg-app text-text-primary overflow-hidden font-sans">
       <HelpModal isOpen={isHelpOpen} onClose={() => setIsHelpOpen(false)} />
-
-        <PublishModal 
-  isOpen={isPublishModalOpen} 
-  onClose={() => setIsPublishModalOpen(false)} 
-  onPublish={handlePublish}
-  isPublishing={isPublishing}
-/>
       
-      {/* NEW: The Gallery Modal */}
       <TemplateGallery 
         isOpen={isGalleryOpen} 
         onClose={() => setIsGalleryOpen(false)}
@@ -216,83 +178,85 @@ const handlePublish = async (title, tags) => {
         selectedId={selectedTemplate}
         onSelect={setSelectedTemplate}
       />
+      
+      <PublishModal 
+        isOpen={isPublishModalOpen} 
+        onClose={() => setIsPublishModalOpen(false)} 
+        onPublish={handlePublish}
+        isPublishing={isPublishing}
+      />
 
-      <header className="bg-white border-b border-gray-200 px-6 py-3 flex justify-between items-center shadow-sm z-10">
-        <div className="flex items-center gap-2">
-          <h1 className="text-xl font-bold text-hive">Hive Studio</h1>
-          <button onClick={() => setIsHelpOpen(true)} className="text-gray-400 hover:text-hive transition">
-            <HelpCircle size={18} />
-          </button>
+      {/* HEADER: Dark Panel */}
+      <header className="bg-bg-panel border-b border-ui-border px-6 py-3 flex justify-between items-center shadow-lg z-20 shrink-0">
+        <div className="flex items-center gap-3">
+  <Link to="/" className="flex items-center gap-3 hover:opacity-80 transition">
+    <div className="bg-brand-primary/10 p-2 rounded-lg border border-brand-primary/20">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <path d="M4 8L12 3L20 8V18L12 23L4 18V8Z" stroke="#E31337" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+            </svg>
+          </div>
+          <div>
+            <h1 className="text-lg font-bold text-text-primary tracking-tight leading-none">Hive Studio</h1>
+            <p className="text-[10px] text-text-muted uppercase tracking-widest font-semibold mt-0.5">Creator Terminal</p>
+          </div>
+           </Link>
         </div>
         
-        <div className="flex items-center gap-3">
-          <button onClick={handleClear} className="flex items-center gap-1 text-xs text-gray-400 hover:text-red-500 transition mr-2">
-            <Trash2 size={14} /> Clear
+        <div className="flex items-center gap-4">
+          <LoginButton username={username} onLogin={handleLogin} onLogout={handleLogout} />
+          
+          <div className="h-6 w-px bg-ui-divider"></div>
+
+          {/* Template Selector Button */}
+          <button 
+            onClick={() => setIsGalleryOpen(true)}
+            className="flex items-center gap-2 px-3 py-1.5 bg-bg-panel-soft hover:bg-ui-hover text-text-secondary hover:text-text-primary rounded-lg border border-ui-border transition text-sm group"
+          >
+            <LayoutTemplate size={14} className="text-text-muted group-hover:text-brand-primary transition-colors"/>
+            {loadingTemplates ? <Loader2 size={12} className="animate-spin" /> : activeTemplateName}
           </button>
 
-          <div className="h-6 w-px bg-gray-200"></div>
-
-          {/* NEW: Gallery Button & Blueprint Button Group */}
-          <div className="flex items-center gap-0 bg-gray-50 rounded-lg border border-gray-200 overflow-hidden">
-            
-            {/* 1. Open Gallery */}
-            <button 
-              onClick={() => setIsGalleryOpen(true)}
-              className="flex items-center gap-2 px-3 py-1.5 hover:bg-white hover:text-hive transition text-sm font-medium text-gray-700 border-r border-gray-200"
-              title="Browse Templates"
-            >
-              <LayoutTemplate size={14} />
-              {loadingTemplates ? <Loader2 size={12} className="animate-spin" /> : activeTemplateName}
-            </button>
-            
-            {/* 2. Load Blueprint */}
-            <button 
-              onClick={loadBlueprint}
-              className="px-3 py-1.5 hover:bg-white hover:text-hive transition text-gray-500"
-              title="Load Blueprint (Starter Text)"
-              disabled={loadingTemplates}
-            >
-              <FileText size={14} />
-            </button>
-          </div>
-          
-          <LoginButton username={username} onLogin={handleLogin} onLogout={handleLogout} />
-
-<div className="h-6 w-px bg-gray-200 mx-2"></div>
-
-{/* Publish Actions */}
-<div className="flex gap-2">
-  <button 
-    onClick={handleCopy}
-    className="flex items-center gap-2 px-4 py-2 border border-gray-200 text-gray-600 rounded-lg hover:bg-gray-50 transition text-sm font-medium"
-  >
-    <Copy size={16} /> Code
-  </button>
-
-  <button 
-    onClick={() => {
-      if(!username) return alert("Please login to publish!");
-      setIsPublishModalOpen(true);
-    }}
-    className="flex items-center gap-2 bg-hive text-white px-4 py-2 rounded-lg hover:opacity-90 transition text-sm font-bold shadow-sm active:scale-95"
-  >
-    <Send size={16} /> Publish
-  </button>
-</div>
+          {/* Publish Button (Gradient Accent) */}
+          <button 
+            onClick={() => { if(!username) return alert("Login first!"); setIsPublishModalOpen(true); }}
+            className="flex items-center gap-2 bg-brand-accent hover:bg-brand-accent/90 text-white px-5 py-2 rounded-lg transition text-xs font-bold shadow-[0_0_15px_rgba(139,92,246,0.3)] active:scale-95"
+          >
+            <Send size={14} /> PUBLISH
+          </button>
         </div>
       </header>
 
-      <main className="flex-1 flex flex-col md:flex-row overflow-hidden">
+      {/* MAIN WORKSPACE */}
+      <main className="flex-1 flex flex-col md:flex-row overflow-hidden bg-bg-app p-0 md:p-4 gap-4">
         
-        {/* Left Column (Editor) */}
-        {/* UPDATE 2: Change 'w-1/2' to 'w-full md:w-1/2' */}
-        {/* UPDATE 3: On mobile, we want the editor to take 50% height, or you can use tabs */}
-        <div className="w-full md:w-1/2 h-1/2 md:h-full flex flex-col border-r border-gray-200 bg-white">
-          <div className="flex justify-between items-center px-4 py-3 border-b border-gray-100">
-            <label className="text-xs font-bold text-gray-400 uppercase tracking-wider">Editor</label>
-            <DividerPicker onSelect={insertDivider} />
+        {/* LEFT: EDITOR PANEL */}
+        <div className="w-full md:w-1/2 flex flex-col bg-bg-panel rounded-xl border border-ui-border shadow-2xl overflow-hidden">
+          
+          {/* Editor Header Bar */}
+          <div className="flex justify-between items-center px-4 py-2 border-b border-ui-border bg-bg-panel-soft shrink-0">
+            <div className="flex items-center gap-3">
+               <div className="flex gap-1.5">
+                  {/* Mac-style dots for aesthetic */}
+                  <div className="w-2.5 h-2.5 rounded-full bg-red-500/20 border border-red-500/50"></div>
+                  <div className="w-2.5 h-2.5 rounded-full bg-yellow-500/20 border border-yellow-500/50"></div>
+                  <div className="w-2.5 h-2.5 rounded-full bg-green-500/20 border border-green-500/50"></div>
+               </div>
+               <div className="h-4 w-px bg-ui-divider mx-1"></div>
+               <button onClick={handleClear} title="Clear Editor" className="text-text-muted hover:text-brand-primary transition">
+                  <Trash2 size={14} />
+               </button>
+               <button onClick={loadBlueprint} title="Reset to Blueprint" className="text-text-muted hover:text-brand-primary transition">
+                  <FileText size={14} />
+               </button>
+            </div>
+            
+            {/* Divider Picker (We might need to style this component later for dark mode, but it fits for now) */}
+            <div className="scale-90 origin-right">
+               <DividerPicker onSelect={insertDivider} />
+            </div>
           </div>
 
+          {/* The Toolbar */}
           <Toolbar 
             onInsert={handleToolbarInsert} 
             activeTemplate={templates.find(t => t.id === selectedTemplate)}
@@ -300,32 +264,88 @@ const handlePublish = async (title, tags) => {
             isMagicLoading={isMagicLoading}
           />
           
-          <textarea
-            ref={textareaRef}
-            className="flex-1 w-full p-4 focus:outline-none resize-none font-mono text-sm leading-relaxed"
-            value={input}
-            onChange={(e) => setInput(e.target.value)}
-            placeholder="Write your post here..."
-            spellCheck="false"
-          />
+          {/* The Editor Textarea */}
+          <div className="flex-1 relative bg-bg-editor">
+            <textarea
+              ref={textareaRef}
+              className="absolute inset-0 w-full h-full p-6 bg-transparent text-text-primary resize-none focus:outline-none font-mono text-sm leading-relaxed placeholder:text-text-muted/30"
+              style={{ fontFamily: '"JetBrains Mono", monospace' }}
+              value={input}
+              onChange={(e) => setInput(e.target.value)}
+              placeholder="# Start writing your masterpiece..."
+              spellCheck="false"
+            />
+          </div>
+          
+          {/* Editor Footer */}
+          <div className="px-4 py-1.5 bg-bg-panel border-t border-ui-border flex justify-between items-center text-[10px] text-text-muted">
+             <span>Markdown Supported</span>
+             <span>{input.length} chars</span>
+          </div>
         </div>
 
-        {/* Right Column (Preview) */}
-        {/* UPDATE 4: Change width and height for mobile */}
-        <div className="w-full md:w-1/2 h-1/2 md:h-full p-4 bg-gray-100/50 flex flex-col items-center border-t md:border-t-0">
-          <div className="w-full flex justify-between items-center mb-2 px-1">
-            <label className="text-xs font-bold text-gray-400 uppercase tracking-wider">Real-time Preview</label>
-            <div className="flex bg-gray-200 rounded p-1 gap-1">
-              <button onClick={() => setIsMobilePreview(false)} className={`p-1 rounded transition ${!isMobilePreview ? 'bg-white shadow text-hive' : 'text-gray-500'}`}><Monitor size={14} /></button>
-              <button onClick={() => setIsMobilePreview(true)} className={`p-1 rounded transition ${isMobilePreview ? 'bg-white shadow text-hive' : 'text-gray-500'}`}><Smartphone size={14} /></button>
+        {/* RIGHT: PREVIEW PANEL */}
+        <div className="w-full md:w-1/2 flex flex-col bg-bg-panel-soft rounded-xl border border-ui-border shadow-xl overflow-hidden relative h-full">
+          
+          {/* Preview Header */}
+          <div className="flex justify-between items-center px-4 py-3 border-b border-ui-border bg-bg-panel shrink-0">
+            <label className="text-xs font-bold text-text-muted uppercase tracking-wider flex items-center gap-2">
+              <span className="w-2 h-2 rounded-full bg-status-success shadow-[0_0_8px_rgba(34,197,94,0.6)]"></span> 
+              PeakD Preview
+            </label>
+            
+            <div className="flex bg-bg-editor rounded-lg p-0.5 gap-1 border border-ui-border">
+              <button 
+                onClick={() => setIsMobilePreview(false)}
+                className={`p-1.5 rounded-md transition ${!isMobilePreview ? 'bg-bg-panel-soft text-brand-primary shadow-sm' : 'text-text-muted hover:text-text-secondary'}`}
+                title="Desktop View"
+              >
+                <Monitor size={14} />
+              </button>
+              <button 
+                onClick={() => setIsMobilePreview(true)}
+                className={`p-1.5 rounded-md transition ${isMobilePreview ? 'bg-bg-panel-soft text-brand-primary shadow-sm' : 'text-text-muted hover:text-text-secondary'}`}
+                title="Mobile View"
+              >
+                <Smartphone size={14} />
+              </button>
             </div>
           </div>
           
-          {/* Note: The inner mobile preview toggle still works within this container */}
-          <div className={`transition-all duration-300 h-full ${isMobilePreview ? 'w-[375px]' : 'w-full'}`}>
-             <Preview htmlContent={outputHtml} />
+          {/* Preview Canvas (The Desk) */}
+          <div className={`flex-1 bg-bg-panel-soft relative transition-all duration-300 ${
+            isMobilePreview 
+              ? 'overflow-y-auto p-8 flex justify-center items-start' // Mobile: Scrollable desk, padded
+              : 'overflow-hidden p-4 md:p-8 flex justify-center items-start h-full' // Desktop: Fixed desk, fills height
+          }`}>
+             
+             {/* Grid Background */}
+             <div className="absolute inset-0 opacity-[0.03] pointer-events-none" style={{ backgroundImage: 'radial-gradient(#fff 1px, transparent 1px)', backgroundSize: '20px 20px' }}></div>
+
+             {/* The Page (Paper / Phone) */}
+             <div className={`transition-all duration-500 ease-in-out bg-white shadow-2xl flex flex-col shrink-0 ${
+                isMobilePreview 
+                  ? 'w-[375px] h-[667px] rounded-[30px] border-[8px] border-bg-editor overflow-hidden mb-8' // Mobile: Fixed size, margin bottom for scrolling space
+                  : 'w-full h-full rounded-sm overflow-hidden' // Desktop: Fills parent
+             }`}>
+                
+                <div className="flex-1 h-full w-full relative">
+                   <Preview htmlContent={outputHtml} />
+                </div>
+             </div>
+          </div>
+          
+          {/* Preview Footer Actions */}
+          <div className="px-4 py-2 bg-bg-panel border-t border-ui-border flex justify-end gap-3 shrink-0 z-10">
+             <button onClick={() => setIsHelpOpen(true)} className="text-text-muted hover:text-brand-primary transition flex items-center gap-1 text-xs">
+                <HelpCircle size={14} /> Help
+             </button>
+             <button onClick={handleCopy} className="text-text-muted hover:text-brand-primary transition flex items-center gap-1 text-xs">
+                <Copy size={14} /> Copy HTML
+             </button>
           </div>
         </div>
+
       </main>
     </div>
   );

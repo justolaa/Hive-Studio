@@ -1,16 +1,64 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&family=Source+Serif+4:ital,wght@0,400;0,600;1,400&display=swap');
 @import "tailwindcss";
 
 @theme {
-  /* This adds our custom Hive colors */
-  --color-hive: #E31337;
-  --color-dark-100: #1e1e1e;
-  --color-dark-200: #121212;
+  /* --- PALETTE: Creator Terminal --- */
+
+  /* Backgrounds */
+  --color-bg-app: #0F1117;
+  --color-bg-panel: #151823;
+  --color-bg-panel-soft: #1B2030;
+  --color-bg-editor: #0D0F14;
+
+  /* Text */
+  --color-text-primary: #E6EAF2;
+  --color-text-secondary: #AAB1C3;
+  --color-text-muted: #6E768F;
+  --color-text-inverse: #0F1117;
+
+  /* Branding */
+  --color-brand-primary: #E31337;
+  --color-brand-soft: #F24C62;
+  --color-brand-accent: #8B5CF6;
+
+  /* UI Elements */
+  --color-ui-border: #252A3A;
+  --color-ui-divider: #2E3448;
+  --color-ui-hover: #1F2435;
+  --color-ui-focus: #3B82F6;
+
+  /* Status */
+  --color-status-success: #22C55E;
+
+  /* FONTS */
+  --font-sans: 'Inter', sans-serif;
+  --font-serif: 'Source Serif 4', serif;
+  --font-mono: 'JetBrains Mono', monospace;
 }
 
-/* Custom global styles */
+/* Global Reset */
 body {
-  background-color: #f8fafc;
-  /* slight grey */
-  color: #1e293b;
-  /* slate-800 equivalent */
+  background-color: var(--color-bg-app);
+  color: var(--color-text-primary);
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Custom Scrollbar (Dark Mode Friendly) */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--color-bg-app);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--color-ui-border);
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--color-text-muted);
 }

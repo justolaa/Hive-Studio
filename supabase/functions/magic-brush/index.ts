@@ -8,13 +8,11 @@ const corsHeaders = {
 }
 
 // CONFIG
-const DAILY_LIMIT = 7; // Your requested limit
+const DAILY_LIMIT = 7; 
 const MODEL_PRIORITY = ["gemini-2.5-flash", "gemini-2.5-flash-lite"];
 
-// HELPER: Defined outside the main handler for better scope management
 async function runAIWithFallback(genAI: any, prompt: string, inputData: string) {
   let lastError = null;
-
   for (const modelName of MODEL_PRIORITY) {
     try {
       console.log(`Attempting with model: ${modelName}...`);
@@ -47,7 +45,7 @@ serve(async (req) => {
     const supabaseAdmin = createClient(supabaseUrl!, serviceRoleKey || supabaseKey!)
     const clientIp = req.headers.get('x-forwarded-for') || 'unknown';
 
-    // 1. Check Usage
+    // Check Usage
     const yesterday = new Date();
     yesterday.setDate(yesterday.getDate() - 1);
 
@@ -57,7 +55,6 @@ serve(async (req) => {
       .eq('ip_address', clientIp)
       .gt('created_at', yesterday.toISOString());
 
-    // 2. Block if limit exceeded
     if (count !== null && count >= DAILY_LIMIT) {
       return new Response(JSON.stringify({ 
         error: `Daily Limit Reached. You have used ${count}/${DAILY_LIMIT} free AI credits today.` 
@@ -67,13 +64,12 @@ serve(async (req) => {
       })
     }
 
-    // 3. Log Request (Async)
     supabaseAdmin.from('ai_usage_logs').insert({
       ip_address: clientIp,
       action_type: action
-    }).then(); // Fire and forget
+    }).then(); 
 
-    // --- AI LOGIC ---
+    // --- AI SETUP ---
     const supabase = createClient(supabaseUrl!, supabaseKey!)
     const genAI = new GoogleGenerativeAI(apiKey)
 
@@ -82,53 +78,61 @@ serve(async (req) => {
 
     if (action === 'polish') {
       inputData = text;
+      
       const { data: dividers } = await supabase.from('dividers').select('url, tags')
-      const { data: templates } = await supabase.from('templates').select('id, name, category')
+      const { data: templates } = await supabase.from('templates').select('id, name, category, description, ai_prompt')
+      
+      // Find active template logic...
+      const activeTemplate = templates?.find(t => t.name === templateName);
+      
+      let formattingRules = `
+        1. CONTENT: Keep text exactly as provided.
+        2. HEADINGS: <h2>Title</h2>.
+        3. IMAGES: <center><img src="URL" /></center>
+      `;
+
+      if (activeTemplate && activeTemplate.ai_prompt) {
+        formattingRules = `--- CUSTOM TEMPLATE RULES ---\n${activeTemplate.ai_prompt}\n---------------------------`;
+      }
+
       const dividerContext = dividers ? JSON.stringify(dividers) : "[]"
-      const templateContext = templates ? JSON.stringify(templates) : "[]"
+      const templateContext = templates ? JSON.stringify(templates.map(t => ({id: t.id, name: t.name, category: t.category, description: t.description}))) : "[]"
 
       prompt = `
         You are an API that outputs ONLY raw JSON. 
-        The user is using the "${templateName}" template.
+        The user is currently using the "${templateName}" template.
         
         --- BILINGUAL RULES (STRICT) ---
         If the text is in two languages (e.g. English / Spanish):
-        1. FIRST PART: Put the English/Primary text. (This will render on the LEFT).
-        2. SEPARATOR: Put "---" on a new line.
-        3. SECOND PART: Put the Translated/Secondary text. (This will render on the RIGHT).
-        4. WRAPPER: Wrap the whole block in [dual] tags.
-        5. Be smart to know texts that need quote or heading h1, h2, h3 or paragraph.
-        6. A divider should not be put next to another divider.
+        1. FIRST PART: English text.
+        2. SEPARATOR: "---" on new line.
+        3. SECOND PART: Translated text.
+        4. WRAPPER: [dual] ... [/dual].
+        5. DO NOT use <strong>/ <br> inside paragraphs.
         
-        CORRECT FORMAT (do not use <strong> inside the dual block paragraphs):
+        CORRECT:
         [dual]
-        English text paragraph 1... 
-        
-        English text paragraph 2...
+        English text...
         ---
-        Spanish text paragraph 1...
-        
-        Spanish text paragraph 2...
+        Spanish text...
         [/dual]
         <hr />
 
-        --- DIVIDER IMAGE RULES (VERY STRICT) ---
-        You have a specific library of allowed images: ${dividerContext}
-        
-        1. You MUST select a 'url' strictly from this provided list.
-        2. DO NOT invent, guess, or create placeholder URLs (like 'divider.png' or 'image.jpg').
-        3. If you detect a specific topic (e.g., Crypto), pick a URL with that tag.
-        4. If no specific topic match is found, pick a URL with the 'general' or 'standard' tag.
-        5. If the list is empty or you cannot find a match, DO NOT insert an <img> tag. Just use <hr />.
-
         --- FORMATTING RULES ---
-        1. CONTENT: Keep text exactly as provided.
-        2. HEADINGS: <h2>Title</h2> (If "Cinephile": <center><h2>Title</h2></center>).
-        3. IMAGES: <center><img src="URL" /></center>
-        4. INSERTING DIVIDERS: Insert <center><img src="SELECTED_URL_FROM_LIST" /></center> between major topics.
-        5. SUGGESTION: Pick best template ID from: ${templateContext}.
+        ${formattingRules}
 
-        --- REQUIRED OUTPUT FORMAT (JSON ONLY) ---
+        --- DIVIDERS ---
+        Library: ${dividerContext}
+        1. Pick best URL from list.
+        2. If no match, use 'general' tag. 
+        3. DO NOT invent URLs. 
+        4. Insert <center><img src="SELECTED_URL" /></center> between major topics.
+
+        --- SUGGESTION ---
+        Templates: ${templateContext}
+        Task: Suggest best template ID.
+
+        OUTPUT JSON ONLY:
         {
           "formatted_text": "HTML_STRING",
           "suggested_template_id": "UUID_OR_NULL",
@@ -136,12 +140,45 @@ serve(async (req) => {
           "topic_detected": "STRING"
         }
       `
-    } else if (action === 'generate') {
+    } 
+    
+    // --- THIS IS THE PART WE ARE FIXING ---
+    else if (action === 'generate') {
        inputData = rawInput;
-       prompt = `Analyze HTML. Output JSON ONLY: { "name": "", "category": "", "container_class": "", "css_code": "", "skeleton": "" }`
+       prompt = `
+         You are a Senior Frontend Architect.
+         Your goal is to convert raw HTML into a reusable Hive Template JSON.
+
+         INPUT: Raw HTML snippet (often containing inline styles or Hive-specific classes).
+
+         TASK 1: CSS EXTRACTION
+         - Look for inline 'style="..."' attributes. Extract them into a CSS class.
+         - Look for generic Bootstrap classes.
+         - Create a unique container class name (e.g. '.retro-gaming-mode').
+         - Write a CLEAN CSS string that targets that class.
+
+         TASK 2: SKELETON CREATION
+         - Remove specific content. Replace "My Trip to Paris" with "[Title Here]".
+         - Replace specific paragraphs with "[Insert text here...]".
+         - Keep the structure (divs, imgs, hrs) intact.
+         - If you see an image, replace the src with a placeholder or keep it if it looks like a divider.
+
+         TASK 3: AI RULES GENERATION
+         - Analyze the layout. Does it use 'pull-left'? Does it use 'text-center'?
+         - Write specific instructions for the AI on how to use this template (e.g., "Alternate images left and right").
+
+         OUTPUT JSON ONLY:
+         {
+           "name": "Creative Name",
+           "category": "Gaming | Crypto | Life",
+           "container_class": "unique-class-name",
+           "css_code": "CSS string...",
+           "skeleton": "HTML string...",
+           "ai_prompt": "Instructions for the AI..."
+         }
+       `
     }
 
-    // Call the helper function (Passing genAI instance)
     let outputText = await runAIWithFallback(genAI, prompt, inputData);
 
     // CLEANUP
