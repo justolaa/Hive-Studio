@@ -6,10 +6,16 @@ import {
 
 export default function Toolbar({ onInsert, activeTemplate, onMagic, isMagicLoading }) {
   const [showHeadingMenu, setShowHeadingMenu] = useState(false);
-  const isCinephile = activeTemplate?.container_class === 'inephile-mode';
+
+  // --- THE FIX ---
+  // We check if the class OR the name contains 'cinephile'. 
+  // This ensures the button appears even if you renamed the class slightly in the Admin panel.
+  const isCinephile = 
+    activeTemplate?.container_class?.toLowerCase().includes('cinephile') || 
+    activeTemplate?.name?.toLowerCase().includes('cinephile');
 
   const insertHeading = (tag) => {
-    // Context-aware heading insertion
+    // Smart Heading: Center it if we are in Cinephile mode
     const code = isCinephile ? `<center><${tag}>` : `<${tag}>`;
     const endCode = isCinephile ? `</${tag}></center>` : `</${tag}>`;
     
@@ -23,7 +29,7 @@ export default function Toolbar({ onInsert, activeTemplate, onMagic, isMagicLoad
       {/* LEFT: Formatting Tools */}
       <div className="flex items-center gap-1">
         
-        {/* Typography Group */}
+        {/* Typography */}
         <div className="flex gap-0.5">
           <button onClick={() => onInsert('<strong>', '</strong>')} className="btn-tool" title="Bold"><Bold size={15} /></button>
           <button onClick={() => onInsert('<em>', '</em>')} className="btn-tool" title="Italic"><Italic size={15} /></button>
@@ -44,7 +50,7 @@ export default function Toolbar({ onInsert, activeTemplate, onMagic, isMagicLoad
 
         <div className="w-px h-4 bg-ui-divider mx-2"></div>
 
-        {/* Structure Group */}
+        {/* Structure */}
         <div className="flex gap-0.5">
           <button onClick={() => onInsert('<a href="">', '</a>')} className="btn-tool" title="Link"><Link size={15} /></button>
           <button onClick={() => onInsert('<blockquote>', '</blockquote>')} className="btn-tool" title="Quote"><Quote size={15} /></button>
@@ -55,14 +61,19 @@ export default function Toolbar({ onInsert, activeTemplate, onMagic, isMagicLoad
 
         {/* Layout Group */}
         <div className="flex gap-0.5">
+          {/* Hide Left/Right if Cinephile (Strict Mode) */}
           {!isCinephile && <button onClick={() => onInsert('<div class="pull-left">', '</div>')} className="btn-tool"><AlignLeft size={15} /></button>}
+          
           <button onClick={() => onInsert('<center>', '</center>')} className="btn-tool"><AlignCenter size={15} /></button>
+          
           {!isCinephile && <button onClick={() => onInsert('<div class="pull-right">', '</div>')} className="btn-tool"><AlignRight size={15} /></button>}
           
+          {/* Show Dual if Cinephile */}
           {isCinephile && (
             <button 
               onClick={() => onInsert('[dual]\n<strong>English</strong> <br/>\nText...\n---\n<strong>Español</strong> <br/>\nTexto...\n[/dual]', '')} 
               className="flex items-center gap-1 px-2 py-1 text-xs font-bold text-text-primary bg-bg-panel-soft hover:bg-ui-hover rounded border border-ui-border transition ml-1"
+              title="Insert Dual Columns"
             >
               <Columns size={14} className="text-brand-primary" /> Dual
             </button>
@@ -70,7 +81,7 @@ export default function Toolbar({ onInsert, activeTemplate, onMagic, isMagicLoad
         </div>
       </div>
 
-      {/* RIGHT: The Gradient Magic Brush */}
+      {/* RIGHT: Magic Brush */}
       <div>
         <button 
           onClick={onMagic}

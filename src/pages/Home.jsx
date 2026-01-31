@@ -24,8 +24,17 @@ export default function Home() {
     return localStorage.getItem('hive-studio-template') || '';
   });
 
-  const [input, setInput] = useState(() => {
-    return localStorage.getItem('hive-studio-draft') || '';
+ const [input, setInput] = useState(() => {
+    // If they have a saved draft, load it.
+    const saved = localStorage.getItem('hive-studio-draft');
+    if (saved) return saved;
+
+    // If new user, show a CLEAN start instead of code
+    return `# My New Post
+
+Start writing here...
+
+(Click "Magic Brush" to format, or the File icon above to load a template blueprint)`;
   });
 
   const [isMobilePreview, setIsMobilePreview] = useState(false);
@@ -125,13 +134,20 @@ export default function Home() {
     localStorage.removeItem('hive_user');
   };
 
-  const handlePublish = async (title, tags) => {
+  // Updated to accept the data object from the modal
+  const handlePublish = async (publishData) => {
     if (!username) return alert("Please login first!");
     setIsPublishing(true);
     try {
-      const result = await publishPost(username, title, outputHtml, tags);
+      // Pass the object (title, tags, description, payout) AND the html body
+      const result = await publishPost(username, publishData, outputHtml);
+      
       alert(`Published successfully! 🚀\nPermlink: ${result.permlink}`);
       setIsPublishModalOpen(false);
+      
+      if(confirm("Open post in PeakD?")) {
+        window.open(`https://peakd.com/@${username}/${result.permlink}`, '_blank');
+      }
     } catch (error) {
       alert("Publish failed: " + error.message);
     } finally {
@@ -166,6 +182,12 @@ export default function Home() {
 
   const activeTemplateName = templates.find(t => t.id === selectedTemplate)?.name || "Loading...";
 
+  // Calculate word count
+  // 1. Trim whitespace from start/end
+  // 2. Split by any whitespace character (space, tab, newline)
+  // 3. Filter out empty strings to handle double spaces correctly
+  const wordCount = input.trim() === '' ? 0 : input.trim().split(/\s+/).length;
+
   // --- NEW UI RENDER ---
   return (
     <div className="h-screen flex flex-col bg-bg-app text-text-primary overflow-hidden font-sans">
@@ -184,6 +206,7 @@ export default function Home() {
         onClose={() => setIsPublishModalOpen(false)} 
         onPublish={handlePublish}
         isPublishing={isPublishing}
+        username={username} // <--- ADD THIS LINE
       />
 
       {/* HEADER: Dark Panel */}
@@ -245,9 +268,18 @@ export default function Home() {
                <button onClick={handleClear} title="Clear Editor" className="text-text-muted hover:text-brand-primary transition">
                   <Trash2 size={14} />
                </button>
-               <button onClick={loadBlueprint} title="Reset to Blueprint" className="text-text-muted hover:text-brand-primary transition">
-                  <FileText size={14} />
-               </button>
+               {/* Inside the Header logic */}
+<button 
+  onClick={loadBlueprint}
+  className={`flex items-center gap-2 px-3 py-1.5 hover:bg-ui-hover text-text-secondary hover:text-text-primary rounded-lg border border-ui-border transition text-sm ${
+    input.length < 200 ? "animate-pulse border-brand-primary/50 text-brand-primary" : ""
+  }`}
+  title="Load Template Blueprint"
+>
+  <FileText size={14} />
+  {/* Add text label so they know what it does */}
+  <span className="hidden lg:inline">Load Blueprint</span>
+</button>
             </div>
             
             {/* Divider Picker (We might need to style this component later for dark mode, but it fits for now) */}
@@ -266,21 +298,21 @@ export default function Home() {
           
           {/* The Editor Textarea */}
           <div className="flex-1 relative bg-bg-editor">
-            <textarea
-              ref={textareaRef}
-              className="absolute inset-0 w-full h-full p-6 bg-transparent text-text-primary resize-none focus:outline-none font-mono text-sm leading-relaxed placeholder:text-text-muted/30"
-              style={{ fontFamily: '"JetBrains Mono", monospace' }}
-              value={input}
-              onChange={(e) => setInput(e.target.value)}
-              placeholder="# Start writing your masterpiece..."
-              spellCheck="false"
-            />
+           <textarea
+  ref={textareaRef}
+  className="absolute inset-0 w-full h-full p-6 bg-transparent text-text-primary resize-none focus:outline-none font-mono text-sm leading-loose" // Changed leading-relaxed to leading-loose
+  style={{ fontFamily: '"JetBrains Mono", monospace' }}
+  value={input}
+  onChange={(e) => setInput(e.target.value)}
+  placeholder="# Start writing your masterpiece..."
+  spellCheck="false"
+/>
           </div>
           
           {/* Editor Footer */}
           <div className="px-4 py-1.5 bg-bg-panel border-t border-ui-border flex justify-between items-center text-[10px] text-text-muted">
              <span>Markdown Supported</span>
-             <span>{input.length} chars</span>
+             <span className="font-mono">{wordCount} words</span>
           </div>
         </div>
 

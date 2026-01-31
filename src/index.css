@@ -62,3 +62,18 @@ body {
 ::-webkit-scrollbar-thumb:hover {
   background: var(--color-text-muted);
 }
+
+/* Add this at the bottom */
+
+.writing-mode {
+  line-height: 1.8;
+  /* More breathing room */
+  color: #E6EAF2;
+  caret-color: #E31337;
+  /* Brand color cursor */
+}
+
+/* Make markdown syntax slightly dimmer so actual text pops */
+.writing-mode::placeholder {
+  color: #6E768F;
+}

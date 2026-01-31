@@ -50,7 +50,7 @@ export default function Landing() {
       <div className="max-w-5xl mx-auto px-6 pt-20 pb-32 text-center">
         <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-brand-primary/10 border border-brand-primary/20 text-brand-primary text-xs font-bold mb-8 animate-fade-in">
           <Sparkles size={12} />
-          <span>POWERED BY GEMINI AI</span>
+          <span>CREATED BY JUSTOLA1</span>
         </div>
         
         <h1 className="text-5xl md:text-7xl font-bold tracking-tight mb-6 text-white leading-tight">
@@ -61,7 +61,7 @@ export default function Landing() {
         </h1>
         
         <p className="text-lg text-text-secondary max-w-2xl mx-auto mb-10 leading-relaxed">
-          The professional editor for Hive creators. Auto-formatting, dual-language support, and AI styling tools—all in your browser.
+          The professional editor for Hive creators. Auto-formatting, dual-language support, and AI styling tools, all in your browser.
         </p>
         
         <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
@@ -106,7 +106,7 @@ export default function Landing() {
             </div>
             <h3 className="text-xl font-bold text-white mb-2">Magic Brush AI</h3>
             <p className="text-text-secondary leading-relaxed">
-              Messy text? One click fixes grammar, adds headers, and formats your post structure automatically using Gemini 2.5.
+              Messy text? One click adds headers, and formats your post structure automatically.
             </p>
           </div>
 
@@ -140,10 +140,9 @@ export default function Landing() {
           <div className="text-text-muted text-sm">
             © 2026 Hive Studio. Built for the Hive Blockchain.
           </div>
-          <div className="flex gap-6 text-sm font-medium text-text-secondary">
-            {/* You can still access admin by typing the URL, or put a hidden link here */}
-            <Link to="/admin" className="hover:text-brand-primary transition opacity-50 hover:opacity-100">Admin</Link>
-          </div>
+          
+          {/*<div className="flex gap-6 text-sm font-medium text-text-secondary"> </div> */}
+
         </div>
       </footer>
 
