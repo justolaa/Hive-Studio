@@ -8,6 +8,7 @@ import HelpModal from '../components/HelpModal';
 import TemplateGallery from '../components/TemplateGallery';
 import LoginButton from '../components/LoginButton';
 import PublishModal from '../components/PublishModal';
+import MagicResultModal from '../components/MagicResultModal';
 import { publishPost } from '../lib/hive';
 import { polishText } from '../lib/magic';
 import { Copy, Smartphone, Monitor, Trash2, FileText, HelpCircle, Loader2, LayoutTemplate, Send, Menu } from 'lucide-react'; 
@@ -19,6 +20,10 @@ export default function Home() {
   // --- STATE ---
   const [templates, setTemplates] = useState([]);
   const [loadingTemplates, setLoadingTemplates] = useState(true);
+  const [magicResult, setMagicResult] = useState(null); // Stores AI result
+const [isMagicModalOpen, setIsMagicModalOpen] = useState(false);
+const [isRePolishing, setIsRePolishing] = useState(false); // For the 2nd pass
+const rawTextRef = useRef(''); 
   
   const [selectedTemplate, setSelectedTemplate] = useState(() => {
     return localStorage.getItem('hive-studio-template') || '';
@@ -158,25 +163,81 @@ Start writing here...
   const handleMagic = async () => {
     if (!input.trim()) return alert("Please write some text first!");
     
+    // 1. CACHE RAW TEXT IN REF (Immediate & Permanent)
+    rawTextRef.current = input;
+
     // Custom confirm dialog for Magic Brush
-    if (!confirm("✨ Magic Brush will:\n1. Auto-format your text\n2. Insert relevant dividers\n3. Suggest the best template\n\nProceed?")) return;
+    // Note: If you want to skip this confirm since we have the modal, you can.
+    // if (!confirm("Proceed with AI formatting?")) return; 
 
     setIsMagicLoading(true);
     try {
-      const aiResponse = await polishText(input, selectedTemplate || "standard"); 
+      const activeTemplateName = templates.find(t => t.id === selectedTemplate)?.name || "Standard";
       
+      // Pass ID if we have it, otherwise Name
+      const aiResponse = await polishText(input, selectedTemplate || "standard");
+      
+      setMagicResult(aiResponse);
       setInput(aiResponse.formatted_text);
 
       if (aiResponse.suggested_template_id && aiResponse.suggested_template_id !== selectedTemplate) {
-        const switchMsg = `✨ AI Analysis: Topic Detected [${aiResponse.topic_detected}]\nSuggested Template: ${aiResponse.suggested_template_name}\n\nSwitch template now?`;
-        if (confirm(switchMsg)) {
-          setSelectedTemplate(aiResponse.suggested_template_id);
-        }
+        setIsMagicModalOpen(true);
+      } else {
+        alert(`✨ Magic Polish Complete! (Topic: ${aiResponse.topic_detected})`);
       }
     } catch (error) {
       alert("AI Error: " + error.message);
     } finally {
       setIsMagicLoading(false);
+    }
+  };
+
+  const handleAcceptSuggestion = () => {
+    if (magicResult?.suggested_template_id) {
+      const newId = magicResult.suggested_template_id;
+      setSelectedTemplate(newId);
+      rePolish(newId); // Auto-repolish with new rules
+    }
+    setIsMagicModalOpen(false);
+  };
+
+  const handleOpenManualGallery = () => {
+    setIsMagicModalOpen(false);
+    setIsGalleryOpen(true);
+    setIsRePolishing(true);
+  };
+
+  // Option 3: Keep Current (Just close)
+  const handleKeepCurrent = () => {
+    setIsMagicModalOpen(false);
+  };
+
+  const handleTemplateSelect = (id) => {
+    setSelectedTemplate(id);
+    if (isRePolishing) {
+      rePolish(id);
+    }
+  };
+
+  
+
+  const rePolish = async (newTemplateId) => {
+    setIsMagicLoading(true); 
+    try {
+      // 2. USE CACHED RAW TEXT
+      // Use the clean text we saved before the first AI pass
+      const textToPolish = rawTextRef.current || input; 
+      
+      console.log("Re-Polishing with Template ID:", newTemplateId); // Debug Log
+      
+      const newFormat = await polishText(textToPolish, newTemplateId);
+      setInput(newFormat.formatted_text);
+    } catch (e) {
+      console.error("Re-polish failed", e);
+      alert("Failed to apply new template: " + e.message);
+    } finally {
+      setIsMagicLoading(false);
+      setIsRePolishing(false);
     }
   };
 
@@ -193,12 +254,25 @@ Start writing here...
     <div className="h-screen flex flex-col bg-bg-app text-text-primary overflow-hidden font-sans">
       <HelpModal isOpen={isHelpOpen} onClose={() => setIsHelpOpen(false)} />
       
+      {/* NEW MODAL */}
+      <MagicResultModal 
+        isOpen={isMagicModalOpen}
+        onClose={() => setIsMagicModalOpen(false)}
+        aiData={magicResult}
+        onApplySuggestion={handleAcceptSuggestion}
+        onOpenGallery={handleOpenManualGallery}
+        onKeepCurrent={handleKeepCurrent}
+      />
+
       <TemplateGallery 
         isOpen={isGalleryOpen} 
-        onClose={() => setIsGalleryOpen(false)}
+        onClose={() => {
+          setIsGalleryOpen(false);
+          setIsRePolishing(false); // Cancel magic mode if closed without picking
+        }}
         templates={templates}
         selectedId={selectedTemplate}
-        onSelect={setSelectedTemplate}
+        onSelect={handleTemplateSelect} // Use the new handler
       />
       
       <PublishModal 

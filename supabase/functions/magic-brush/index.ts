@@ -32,7 +32,7 @@ serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders })
 
   try {
-    const { action, text, rawInput, templateName } = await req.json()
+    const { action, text, rawInput, templateId, templateName } = await req.json()
     
     // --- RATE LIMITING ---
     const supabaseUrl = Deno.env.get('SUPABASE_URL')
@@ -82,17 +82,30 @@ serve(async (req) => {
       const { data: dividers } = await supabase.from('dividers').select('url, tags')
       const { data: templates } = await supabase.from('templates').select('id, name, category, description, ai_prompt')
       
-      // Find active template logic...
-      const activeTemplate = templates?.find(t => t.name === templateName);
+      // 1. TRY FINDING BY ID FIRST (More Robust)
+      let activeTemplate = templates?.find(t => t.id === templateId);
       
+      // 2. FALLBACK TO NAME IF ID NOT FOUND
+      if (!activeTemplate && templateName) {
+        activeTemplate = templates?.find(t => t.name === templateName);
+      }
+      
+      // Default name for display/context
+      const displayTemplateName = activeTemplate ? activeTemplate.name : (templateName || "Standard");
+
       let formattingRules = `
         1. CONTENT: Keep text exactly as provided.
         2. HEADINGS: <h2>Title</h2>.
         3. IMAGES: <center><img src="URL" /></center>
       `;
 
+      // 3. APPLY CUSTOM RULES FROM DB (This is the Brain Implant!)
       if (activeTemplate && activeTemplate.ai_prompt) {
-        formattingRules = `--- CUSTOM TEMPLATE RULES ---\n${activeTemplate.ai_prompt}\n---------------------------`;
+        console.log(`Applying Custom Rules for: ${activeTemplate.name}`);
+        formattingRules = `
+        !!! IMPORTANT: IGNORE DEFAULT RULES. FOLLOW THESE CUSTOM RULES: !!!
+        ${activeTemplate.ai_prompt}
+        `;
       }
 
       const dividerContext = dividers ? JSON.stringify(dividers) : "[]"
@@ -100,10 +113,10 @@ serve(async (req) => {
 
       prompt = `
         You are an API that outputs ONLY raw JSON. 
-        The user is currently using the "${templateName}" template.
+        The user is currently using the "${displayTemplateName}" template.
         
         --- BILINGUAL RULES (STRICT) ---
-        If the text is in two languages (e.g. English / Spanish):
+        If text is bilingual (e.g. English / Spanish):
         1. FIRST PART: English text.
         2. SEPARATOR: "---" on new line.
         3. SECOND PART: Translated text.
@@ -126,7 +139,8 @@ serve(async (req) => {
         1. Pick best URL from list.
         2. If no match, use 'general' tag. 
         3. DO NOT invent URLs. 
-        4. Insert <center><img src="SELECTED_URL" /></center> between major topics.
+        4. Insert <center><img src="SELECTED_URL" /></center> between major topics 
+           (UNLESS Custom Rules say otherwise).
 
         --- SUGGESTION ---
         Templates: ${templateContext}
@@ -140,10 +154,7 @@ serve(async (req) => {
           "topic_detected": "STRING"
         }
       `
-    } 
-    
-    // --- THIS IS THE PART WE ARE FIXING ---
-    else if (action === 'generate') {
+    } else if (action === 'generate') {
        inputData = rawInput;
        prompt = `
          You are a Senior Frontend Architect.
