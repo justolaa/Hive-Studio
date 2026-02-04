@@ -5,7 +5,13 @@ export async function parseToHiveHtml(rawText, templateConfig) {
   if (!templateConfig) return "";
 
   const c = templateConfig;
-  let processingText = rawText;
+  
+  // --- SECURITY FIX START ---
+  // Initialize processingText by stripping <script> tags immediately.
+  // This replaces the old "let processingText = rawText;" line.
+  let processingText = rawText.replace(/<script\b[^>]*>([\s\S]*?)<\/script>/gim, "");
+  // --- SECURITY FIX END ---
+
   const placeholders = {};
   let placeholderIndex = 0;
 
@@ -22,8 +28,7 @@ export async function parseToHiveHtml(rawText, templateConfig) {
     const rawMarkdownA = sideA.trim();
     const rawMarkdownB = sideB.trim();
 
-    // UPDATED: The Right Column is now wrapped in <blockquote>
-    // This gives the translation that nice "grey bar" look automatically.
+    // The Right Column is wrapped in <blockquote> for the grey bar look
     const columnHtml = `
 <div class="${c.dualWrapper}">
 <div class="${c.left}">

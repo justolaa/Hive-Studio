@@ -1,10 +1,10 @@
 import { useState } from 'react';
 import { 
   Bold, Italic, Heading, Link, Quote, AlignLeft, AlignRight, AlignCenter, 
-  Columns, ChevronDown, Minus, Sparkles, Loader2 
+  Columns, ChevronDown, Minus, Sparkles, Loader2, Image as ImageIcon 
 } from 'lucide-react';
 
-export default function Toolbar({ onInsert, activeTemplate, onMagic, isMagicLoading }) {
+export default function Toolbar({ onInsert, activeTemplate, onMagic, isMagicLoading, onImage }) {
   const [showHeadingMenu, setShowHeadingMenu] = useState(false);
 
   // --- THE FIX ---
@@ -53,6 +53,7 @@ export default function Toolbar({ onInsert, activeTemplate, onMagic, isMagicLoad
         {/* Structure */}
         <div className="flex gap-0.5">
           <button onClick={() => onInsert('<a href="">', '</a>')} className="btn-tool" title="Link"><Link size={15} /></button>
+          <button onClick={onImage} className="btn-tool" title="Upload/Gallery"><ImageIcon size={15} /></button>
           <button onClick={() => onInsert('<blockquote>', '</blockquote>')} className="btn-tool" title="Quote"><Quote size={15} /></button>
           <button onClick={() => onInsert('<hr />\n', '')} className="btn-tool" title="Divider"><Minus size={15} /></button>
         </div>

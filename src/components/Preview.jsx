@@ -97,6 +97,7 @@ export default function Preview({ htmlContent, extraCss }) {
         ref={iframeRef} 
         className="w-full h-full flex-1" 
         title="Hive Preview"
+        sandbox="allow-same-origin"
       />
     </div>
   );

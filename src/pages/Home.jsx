@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { supabase } from '../lib/supabase'; 
 import { parseToHiveHtml } from '../lib/parser';
+import { logEvent } from '../lib/analytics';
 import Preview from '../components/Preview';
 import DividerPicker from '../components/DividerPicker';
 import Toolbar from '../components/Toolbar';
@@ -9,6 +10,7 @@ import TemplateGallery from '../components/TemplateGallery';
 import LoginButton from '../components/LoginButton';
 import PublishModal from '../components/PublishModal';
 import MagicResultModal from '../components/MagicResultModal';
+import ImageManager from '../components/ImageManager';
 import { publishPost } from '../lib/hive';
 import { polishText } from '../lib/magic';
 import { Copy, Smartphone, Monitor, Trash2, FileText, HelpCircle, Loader2, LayoutTemplate, Send, Menu } from 'lucide-react'; 
@@ -50,6 +52,7 @@ Start writing here...
   const [isPublishModalOpen, setIsPublishModalOpen] = useState(false);
   const [isPublishing, setIsPublishing] = useState(false);
   const [isMagicLoading, setIsMagicLoading] = useState(false);
+  const [isImageModalOpen, setIsImageModalOpen] = useState(false);
 
   // --- EFFECTS ---
   useEffect(() => {
@@ -112,6 +115,13 @@ Start writing here...
 
   const handleCopy = () => {
     navigator.clipboard.writeText(outputHtml);
+
+     // --- TRACKING ---
+    logEvent('copy_code', {
+      username: username || 'anonymous',
+      template: activeTemplateName
+    });
+    // ----------------
     alert("HTML Copied! Ready to paste into Ecency/PeakD.");
   };
 
@@ -142,10 +152,23 @@ Start writing here...
   // Updated to accept the data object from the modal
   const handlePublish = async (publishData) => {
     if (!username) return alert("Please login first!");
+    
     setIsPublishing(true);
     try {
-      // Pass the object (title, tags, description, payout) AND the html body
+      // 1. Publish to Blockchain
       const result = await publishPost(username, publishData, outputHtml);
+      
+      // 2. Track Event (FIXED)
+      // We access tags from 'publishData.tags'
+      logEvent('publish_success', {
+        username: username,
+        template: activeTemplateName,
+        meta: { 
+          frontend: 'hive-studio', 
+          tags: publishData.tags, // <--- The Fix
+          community: publishData.community || 'blog'
+        }
+      });
       
       alert(`Published successfully! 🚀\nPermlink: ${result.permlink}`);
       setIsPublishModalOpen(false);
@@ -173,7 +196,14 @@ Start writing here...
     setIsMagicLoading(true);
     try {
       const activeTemplateName = templates.find(t => t.id === selectedTemplate)?.name || "Standard";
-      
+
+       // --- TRACKING ---
+      logEvent('magic_brush_used', {
+        username: username || 'anonymous',
+        template: activeTemplateName,
+        meta: { length: input.length } // Track how long the text was
+      });
+      // ----------------
       // Pass ID if we have it, otherwise Name
       const aiResponse = await polishText(input, selectedTemplate || "standard");
       
@@ -241,6 +271,15 @@ Start writing here...
     }
   };
 
+  const handleImageInsert = (html) => {
+  const textarea = textareaRef.current;
+  if (!textarea) return;
+  const start = textarea.selectionStart;
+  const end = textarea.selectionEnd;
+  const text = textarea.value;
+  setInput(text.substring(0, start) + html + text.substring(end));
+};
+
   const activeTemplateName = templates.find(t => t.id === selectedTemplate)?.name || "Loading...";
 
   // Calculate word count
@@ -282,6 +321,13 @@ Start writing here...
         isPublishing={isPublishing}
         username={username} // <--- ADD THIS LINE
       />
+
+      <ImageManager 
+  isOpen={isImageModalOpen} 
+  onClose={() => setIsImageModalOpen(false)}
+  onInsert={handleImageInsert}
+  username={username} // Crucial: Pass username for folder structure
+/>
 
       {/* HEADER: Dark Panel */}
       <header className="bg-bg-panel border-b border-ui-border px-6 py-3 flex justify-between items-center shadow-lg z-20 shrink-0">
@@ -368,6 +414,10 @@ Start writing here...
             activeTemplate={templates.find(t => t.id === selectedTemplate)}
             onMagic={handleMagic}
             isMagicLoading={isMagicLoading}
+            onImage={() => {
+     if (!username) return alert("Please login to upload images.");
+     setIsImageModalOpen(true);
+   }}
           />
           
           {/* The Editor Textarea */}
