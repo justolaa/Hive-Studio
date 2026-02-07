@@ -107,16 +107,40 @@ export default function Admin() {
   // ... (Keep existing Save Logic) ...
   const handleSave = async () => {
     if (!draft.name || !draft.skeleton) return alert("Missing data");
-    const finalData = { ...draft, config: { dualWrapper: "text-justify", left: "pull-left", right: "pull-right" } };
     
-    let res = draft.id 
-      ? await supabase.from('templates').update(finalData).eq('id', draft.id)
-      : await supabase.from('templates').insert([finalData]);
+    // Create a clean payload WITHOUT the 'id'
+    const payload = {
+      name: draft.name,
+      category: draft.category,
+      container_class: draft.container_class,
+      css_code: draft.css_code,
+      skeleton: draft.skeleton,
+      description: draft.description,
+      thumbnail_url: draft.thumbnail_url,
+      ai_prompt: draft.ai_prompt, // Ensure AI rules are saved
+      config: { dualWrapper: "text-justify", left: "pull-left", right: "pull-right" }
+    };
 
-    if (res.error) alert("Error: " + res.error.message);
-    else {
-      alert("Saved!");
+    let error;
+    let res;
+
+    if (draft.id) {
+      // UPDATE: We use draft.id to find the row, but send the clean payload
+      res = await supabase.from('templates').update(payload).eq('id', draft.id);
+    } else {
+      // INSERT: We send the payload (Database auto-generates ID)
+      res = await supabase.from('templates').insert([payload]);
+    }
+    
+    error = res.error;
+    
+    if (error) {
+      alert("Error saving: " + error.message);
+    } else {
+      alert(draft.id ? "Template Updated!" : "Template Created!");
       fetchTemplates();
+      // Optional: Clear form
+      // resetDraft(); 
     }
   };
 

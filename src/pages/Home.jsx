@@ -370,16 +370,19 @@ Start writing here...
       </header>
 
       {/* MAIN WORKSPACE */}
+      {/* MAIN WORKSPACE */}
+      {/* Container: Flex Column on Mobile, Row on Desktop */}
       <main className="flex-1 flex flex-col md:flex-row overflow-hidden bg-bg-app p-0 md:p-4 gap-4">
         
         {/* LEFT: EDITOR PANEL */}
-        <div className="w-full md:w-1/2 flex flex-col bg-bg-panel rounded-xl border border-ui-border shadow-2xl overflow-hidden">
+        {/* FIX: Added 'h-1/2 md:h-full'. 
+            On mobile, it takes top 50%. On desktop, it takes full height. */}
+        <div className="w-full md:w-1/2 h-1/2 md:h-full flex flex-col bg-bg-panel rounded-none md:rounded-xl border-b md:border border-ui-border shadow-2xl overflow-hidden shrink-0">
           
           {/* Editor Header Bar */}
           <div className="flex justify-between items-center px-4 py-2 border-b border-ui-border bg-bg-panel-soft shrink-0">
             <div className="flex items-center gap-3">
                <div className="flex gap-1.5">
-                  {/* Mac-style dots for aesthetic */}
                   <div className="w-2.5 h-2.5 rounded-full bg-red-500/20 border border-red-500/50"></div>
                   <div className="w-2.5 h-2.5 rounded-full bg-yellow-500/20 border border-yellow-500/50"></div>
                   <div className="w-2.5 h-2.5 rounded-full bg-green-500/20 border border-green-500/50"></div>
@@ -388,52 +391,48 @@ Start writing here...
                <button onClick={handleClear} title="Clear Editor" className="text-text-muted hover:text-brand-primary transition">
                   <Trash2 size={14} />
                </button>
-               {/* Inside the Header logic */}
-<button 
-  onClick={loadBlueprint}
-  className={`flex items-center gap-2 px-3 py-1.5 hover:bg-ui-hover text-text-secondary hover:text-text-primary rounded-lg border border-ui-border transition text-sm ${
-    input.length < 200 ? "animate-pulse border-brand-primary/50 text-brand-primary" : ""
-  }`}
-  title="Load Template Blueprint"
->
-  <FileText size={14} />
-  {/* Add text label so they know what it does */}
-  <span className="hidden lg:inline">Load Blueprint</span>
-</button>
+               
+               <button 
+                  onClick={loadBlueprint}
+                  className={`flex items-center gap-2 px-2 py-1 hover:bg-ui-hover text-text-secondary hover:text-text-primary rounded-lg border border-transparent hover:border-ui-border transition text-xs ${
+                    input.length < 200 ? "animate-pulse text-brand-primary" : ""
+                  }`}
+                  title="Load Template Blueprint"
+                >
+                  <FileText size={14} />
+                  <span className="hidden lg:inline">Blueprint</span>
+                </button>
             </div>
             
-            {/* Divider Picker (We might need to style this component later for dark mode, but it fits for now) */}
             <div className="scale-90 origin-right">
                <DividerPicker onSelect={insertDivider} />
             </div>
           </div>
 
-          {/* The Toolbar */}
           <Toolbar 
             onInsert={handleToolbarInsert} 
             activeTemplate={templates.find(t => t.id === selectedTemplate)}
             onMagic={handleMagic}
             isMagicLoading={isMagicLoading}
             onImage={() => {
-     if (!username) return alert("Please login to upload images.");
-     setIsImageModalOpen(true);
-   }}
+               if (!username) return alert("Please login to upload images.");
+               setIsImageModalOpen(true);
+             }}
           />
           
           {/* The Editor Textarea */}
           <div className="flex-1 relative bg-bg-editor">
            <textarea
-  ref={textareaRef}
-  className="absolute inset-0 w-full h-full p-6 bg-transparent text-text-primary resize-none focus:outline-none font-mono text-sm leading-loose" // Changed leading-relaxed to leading-loose
-  style={{ fontFamily: '"JetBrains Mono", monospace' }}
-  value={input}
-  onChange={(e) => setInput(e.target.value)}
-  placeholder="# Start writing your masterpiece..."
-  spellCheck="false"
-/>
+              ref={textareaRef}
+              className="absolute inset-0 w-full h-full p-6 bg-transparent text-text-primary resize-none focus:outline-none font-mono text-sm leading-loose" 
+              style={{ fontFamily: '"JetBrains Mono", monospace' }}
+              value={input}
+              onChange={(e) => setInput(e.target.value)}
+              placeholder="# Start writing your masterpiece..."
+              spellCheck="false"
+            />
           </div>
           
-          {/* Editor Footer */}
           <div className="px-4 py-1.5 bg-bg-panel border-t border-ui-border flex justify-between items-center text-[10px] text-text-muted">
              <span>Markdown Supported</span>
              <span className="font-mono">{wordCount} words</span>
@@ -441,9 +440,10 @@ Start writing here...
         </div>
 
         {/* RIGHT: PREVIEW PANEL */}
-        <div className="w-full md:w-1/2 flex flex-col bg-bg-panel-soft rounded-xl border border-ui-border shadow-xl overflow-hidden relative h-full">
+        {/* FIX: Added 'h-1/2 md:h-full'. 
+            On mobile, it takes bottom 50%. On desktop, it takes full height. */}
+        <div className="w-full md:w-1/2 h-1/2 md:h-full flex flex-col bg-bg-panel-soft rounded-none md:rounded-xl border-t md:border border-ui-border shadow-xl overflow-hidden relative">
           
-          {/* Preview Header */}
           <div className="flex justify-between items-center px-4 py-3 border-b border-ui-border bg-bg-panel shrink-0">
             <label className="text-xs font-bold text-text-muted uppercase tracking-wider flex items-center gap-2">
               <span className="w-2 h-2 rounded-full bg-status-success shadow-[0_0_8px_rgba(34,197,94,0.6)]"></span> 
@@ -468,30 +468,25 @@ Start writing here...
             </div>
           </div>
           
-          {/* Preview Canvas (The Desk) */}
+          {/* Preview Canvas */}
           <div className={`flex-1 bg-bg-panel-soft relative transition-all duration-300 ${
             isMobilePreview 
-              ? 'overflow-y-auto p-8 flex justify-center items-start' // Mobile: Scrollable desk, padded
-              : 'overflow-hidden p-4 md:p-8 flex justify-center items-start h-full' // Desktop: Fixed desk, fills height
+              ? 'overflow-y-auto p-4 flex justify-center items-start' 
+              : 'overflow-hidden p-4 md:p-8 flex justify-center items-start h-full' 
           }`}>
-             
-             {/* Grid Background */}
              <div className="absolute inset-0 opacity-[0.03] pointer-events-none" style={{ backgroundImage: 'radial-gradient(#fff 1px, transparent 1px)', backgroundSize: '20px 20px' }}></div>
 
-             {/* The Page (Paper / Phone) */}
              <div className={`transition-all duration-500 ease-in-out bg-white shadow-2xl flex flex-col shrink-0 ${
                 isMobilePreview 
-                  ? 'w-[375px] h-[667px] rounded-[30px] border-[8px] border-bg-editor overflow-hidden mb-8' // Mobile: Fixed size, margin bottom for scrolling space
-                  : 'w-full h-full rounded-sm overflow-hidden' // Desktop: Fills parent
+                  ? 'w-[375px] h-[667px] rounded-[30px] border-[8px] border-bg-editor overflow-hidden mb-8' 
+                  : 'w-full h-full rounded-sm overflow-hidden' 
              }`}>
-                
                 <div className="flex-1 h-full w-full relative">
                    <Preview htmlContent={outputHtml} />
                 </div>
              </div>
           </div>
           
-          {/* Preview Footer Actions */}
           <div className="px-4 py-2 bg-bg-panel border-t border-ui-border flex justify-end gap-3 shrink-0 z-10">
              <button onClick={() => setIsHelpOpen(true)} className="text-text-muted hover:text-brand-primary transition flex items-center gap-1 text-xs">
                 <HelpCircle size={14} /> Help
