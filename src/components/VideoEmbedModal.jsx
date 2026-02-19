@@ -11,39 +11,32 @@ export default function VideoEmbedModal({ isOpen, onClose, onInsert }) {
     const cleanUrl = url.trim();
 
     try {
-      // 1. YouTube Logic (Now handles Shorts!)
+      // 1. YouTube Logic
       if (cleanUrl.includes('youtube.com') || cleanUrl.includes('youtu.be')) {
         let videoId = '';
 
-        // Scenario A: YouTube Shorts (youtube.com/shorts/ID)
         if (cleanUrl.includes('/shorts/')) {
-          const parts = cleanUrl.split('/shorts/');
-          // Get the part after /shorts/, and split again in case there are query params like ?feature=share
-          videoId = parts[1].split(/[?&]/)[0];
-        } 
-        // Scenario B: Short Link (youtu.be/ID)
-        else if (cleanUrl.includes('youtu.be')) {
+          videoId = cleanUrl.split('/shorts/')[1].split(/[?&]/)[0];
+        } else if (cleanUrl.includes('youtu.be')) {
           videoId = cleanUrl.split('/').pop().split(/[?&]/)[0];
-        } 
-        // Scenario C: Standard Link (youtube.com/watch?v=ID)
-        else {
+        } else {
           const urlObj = new URL(cleanUrl);
           videoId = urlObj.searchParams.get('v');
         }
         
         if (videoId) {
-          // Note: Shorts are vertical, but the standard player handles them fine with black bars.
-          embedCode = `<center><iframe width="560" height="315" src="https://www.youtube.com/embed/${videoId}" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe></center>`;
+          // FIX: Changed width to 100% and height to 400 for better aspect ratio
+          embedCode = `<center><iframe width="100%" height="400" src="https://www.youtube.com/embed/${videoId}" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe></center>`;
         }
       } 
       // 2. 3Speak Logic
       else if (cleanUrl.includes('3speak.tv')) {
-        // Url format: https://3speak.tv/watch?v=username/videoid
         const urlObj = new URL(cleanUrl);
         const vParam = urlObj.searchParams.get('v'); // "username/videoid"
         
         if (vParam) {
-          embedCode = `<center><iframe src="https://3speak.tv/embed?v=${vParam}" width="560" height="315" frameborder="0" allow="accelerometer; autoplay; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe></center>`;
+          // FIX: Changed width to 100% and height to 400
+          embedCode = `<center><iframe src="https://3speak.tv/embed?v=${vParam}" width="100%" height="400" frameborder="0" allow="accelerometer; autoplay; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe></center>`;
         }
       }
 
@@ -71,7 +64,7 @@ export default function VideoEmbedModal({ isOpen, onClose, onInsert }) {
           <button onClick={onClose}><X className="text-text-muted hover:text-white" size={20} /></button>
         </div>
 
-        <p className="text-sm text-text-muted mb-4">Paste a YouTube (Shorts allowed) or 3Speak link.</p>
+        <p className="text-sm text-text-muted mb-4">Paste a YouTube or 3Speak link.</p>
 
         <div className="flex gap-2 mb-6">
           <input 
