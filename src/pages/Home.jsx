@@ -11,6 +11,7 @@ import LoginButton from '../components/LoginButton';
 import PublishModal from '../components/PublishModal';
 import MagicResultModal from '../components/MagicResultModal';
 import ImageManager from '../components/ImageManager';
+import VideoEmbedModal from '../components/VideoEmbedModal';
 import { publishPost } from '../lib/hive';
 import { polishText } from '../lib/magic';
 import { Copy, Smartphone, Monitor, Trash2, FileText, HelpCircle, Loader2, LayoutTemplate, Send, Menu } from 'lucide-react'; 
@@ -25,6 +26,7 @@ export default function Home() {
   const [magicResult, setMagicResult] = useState(null); // Stores AI result
 const [isMagicModalOpen, setIsMagicModalOpen] = useState(false);
 const [isRePolishing, setIsRePolishing] = useState(false); // For the 2nd pass
+const [isVideoModalOpen, setIsVideoModalOpen] = useState(false);
 const rawTextRef = useRef(''); 
   
   const [selectedTemplate, setSelectedTemplate] = useState(() => {
@@ -329,6 +331,12 @@ Start writing here...
   username={username} // Crucial: Pass username for folder structure
 />
 
+<VideoEmbedModal 
+  isOpen={isVideoModalOpen}
+  onClose={() => setIsVideoModalOpen(false)}
+  onInsert={handleImageInsert} // Reusing the insert logic
+/>
+
       {/* HEADER: Dark Panel */}
       <header className="bg-bg-panel border-b border-ui-border px-6 py-3 flex justify-between items-center shadow-lg z-20 shrink-0">
         <div className="flex items-center gap-3">
@@ -418,6 +426,7 @@ Start writing here...
                if (!username) return alert("Please login to upload images.");
                setIsImageModalOpen(true);
              }}
+             onVideo={() => setIsVideoModalOpen(true)}
           />
           
           {/* The Editor Textarea */}

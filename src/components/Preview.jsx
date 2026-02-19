@@ -61,6 +61,14 @@ const HIVE_STYLES = `
     }
 
     p { margin-bottom: 1rem; }
+
+    /* Videos & Iframes */
+    iframe, video { 
+      max-width: 100%; 
+      border-radius: 4px; 
+      display: block; 
+      margin: 20px auto; 
+    }
   </style>
 `;
 
@@ -97,7 +105,8 @@ export default function Preview({ htmlContent, extraCss }) {
         ref={iframeRef} 
         className="w-full h-full flex-1" 
         title="Hive Preview"
-        sandbox="allow-same-origin"
+        // ADD allow-scripts so videos can play
+        sandbox="allow-same-origin allow-scripts" 
       />
     </div>
   );
