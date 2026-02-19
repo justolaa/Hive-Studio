@@ -1,55 +1,103 @@
 import { useState } from 'react';
-import { X, Youtube, Video, Check } from 'lucide-react';
+import { X, Youtube, Video, Check, Loader2 } from 'lucide-react';
 
 export default function VideoEmbedModal({ isOpen, onClose, onInsert }) {
   const [url, setUrl] = useState('');
+  const [loading, setLoading] = useState(false);
 
   if (!isOpen) return null;
 
-  const handleEmbed = () => {
-    let embedCode = '';
+  const handleEmbed = async () => {
     const cleanUrl = url.trim();
+    if (!cleanUrl) return;
+
+    setLoading(true);
+    let thumbnail = '';
+    let videoUrl = cleanUrl;
 
     try {
-      // 1. YouTube Logic
+      // --- 1. YOUTUBE LOGIC ---
       if (cleanUrl.includes('youtube.com') || cleanUrl.includes('youtu.be')) {
         let videoId = '';
-
         if (cleanUrl.includes('/shorts/')) {
           videoId = cleanUrl.split('/shorts/')[1].split(/[?&]/)[0];
+          videoUrl = `https://www.youtube.com/watch?v=${videoId}`; 
         } else if (cleanUrl.includes('youtu.be')) {
           videoId = cleanUrl.split('/').pop().split(/[?&]/)[0];
         } else {
           const urlObj = new URL(cleanUrl);
           videoId = urlObj.searchParams.get('v');
         }
-        
+
         if (videoId) {
-          // FIX: Changed width to 100% and height to 400 for better aspect ratio
-          embedCode = `<center><iframe width="100%" height="400" src="https://www.youtube.com/embed/${videoId}" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe></center>`;
+          thumbnail = `https://img.youtube.com/vi/${videoId}/maxresdefault.jpg`;
         }
       } 
-      // 2. 3Speak Logic
+      
+      // --- 2. 3SPEAK LOGIC (VIA HIVE API) ---
       else if (cleanUrl.includes('3speak.tv')) {
-        const urlObj = new URL(cleanUrl);
-        const vParam = urlObj.searchParams.get('v'); // "username/videoid"
+        // Expected format: https://3speak.tv/watch?v=username/videoid
+        const urlParts = cleanUrl.split('?v=');
         
-        if (vParam) {
-          // FIX: Changed width to 100% and height to 400
-          embedCode = `<center><iframe src="https://3speak.tv/embed?v=${vParam}" width="100%" height="400" frameborder="0" allow="accelerometer; autoplay; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe></center>`;
+        if (urlParts[1]) {
+          const [author, permlink] = urlParts[1].split('/');
+          
+          if (author && permlink) {
+            // Fetch post data from Hive Blockchain to get the thumbnail
+            const response = await fetch('https://api.hive.blog', {
+              method: 'POST',
+              body: JSON.stringify({
+                jsonrpc: '2.0',
+                method: 'condenser_api.get_content',
+                params: [author, permlink],
+                id: 1
+              }),
+              headers: { 'Content-Type': 'application/json' }
+            });
+            
+            const result = await response.json();
+            
+            // Extract image from JSON Metadata
+            if (result.result && result.result.json_metadata) {
+              try {
+                const meta = JSON.parse(result.result.json_metadata);
+                // Try 3speak specific image, or fallback to first image in post
+                thumbnail = meta.image?.[0] || meta.thumbnail;
+              } catch (e) {
+                console.error("Failed to parse metadata", e);
+              }
+            }
+            
+            // Fallback: If Hive lookup failed (maybe video isn't published yet), try generic CDN
+            if (!thumbnail) {
+               thumbnail = `https://img.3speakcontent.online/${permlink}/poster.png`;
+            }
+          }
         }
       }
 
-      if (embedCode) {
-        onInsert(embedCode);
+      // --- GENERATE MARKDOWN ---
+      if (thumbnail && videoUrl) {
+        // The "Image Link" format: [![Alt](Image)](Link)
+        const markdown = `
+<center>
+<a href="${videoUrl}">
+<img src="${thumbnail}" />
+</a>
+</center>`;
+        
+        onInsert(markdown);
         onClose();
         setUrl('');
       } else {
-        alert("Invalid Video URL. Please check the link.");
+        alert("Could not find a thumbnail for this video. Please check the URL.");
       }
+
     } catch (e) {
       console.error(e);
-      alert("Error parsing URL. Please ensure it includes http/https.");
+      alert("Error processing URL: " + e.message);
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -72,14 +120,17 @@ export default function VideoEmbedModal({ isOpen, onClose, onInsert }) {
             placeholder="https://..."
             value={url}
             onChange={(e) => setUrl(e.target.value)}
+            disabled={loading}
           />
         </div>
 
         <button 
           onClick={handleEmbed}
-          className="w-full bg-brand-accent hover:bg-brand-accent/90 text-white py-2.5 rounded-lg font-bold text-sm transition flex items-center justify-center gap-2"
+          disabled={loading}
+          className="w-full bg-brand-accent hover:bg-brand-accent/90 text-white py-2.5 rounded-lg font-bold text-sm transition flex items-center justify-center gap-2 disabled:opacity-50"
         >
-          <Check size={16} /> Insert Video
+          {loading ? <Loader2 size={16} className="animate-spin"/> : <Check size={16} />} 
+          {loading ? "Fetching Thumbnail..." : "Generate Link"}
         </button>
 
         <div className="flex justify-center gap-4 mt-6 text-text-muted opacity-50">
