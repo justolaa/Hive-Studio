@@ -64,10 +64,10 @@ export const publishPost = (username, { title, description, tags, payout, commun
       .replace(/\s+/g, '-')         
       + '-' + Date.now();           
 
-    const jsonMetadata = {
+   const jsonMetadata = {
       tags: tags,
       description: description,
-      app: "https://hivestudio.vercel.app/",
+      app: "hivestudio.vercel.app/1.0", 
       format: "html"
     };
 
