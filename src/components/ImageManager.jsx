@@ -179,12 +179,14 @@ export default function ImageManager({ isOpen, onClose, onInsert, username }) {
                          >
                            <Check size={12}/> Insert
                          </button>
-                         <button 
+                         {/*<button 
                            onClick={() => deleteMedia(file.name)}
                            className="text-red-400 hover:text-red-500 bg-white/10 p-1.5 rounded-full"
                          >
-                           <Trash2 size={14}/>
-                         </button>
+                           <Trash2 size={14}/> 
+                           
+                         </button> */}
+                         
                        </div>
                      </div>
                    );
