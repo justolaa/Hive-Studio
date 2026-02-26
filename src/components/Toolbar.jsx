@@ -24,10 +24,10 @@ export default function Toolbar({ onInsert, activeTemplate, onMagic, isMagicLoad
   };
 
   return (
-    <div className="flex flex-wrap items-center justify-between gap-y-2 p-2 bg-bg-panel border-b border-ui-border select-none">
+    <div className="flex flex-wrap items-center gap-2 p-2 bg-bg-panel border-b border-ui-border select-none">
       
       {/* LEFT: Formatting Tools */}
-      <div className="flex items-center gap-1">
+      <div className="flex flex-wrap items-center gap-1 flex-1">
         
         {/* Typography */}
         <div className="flex gap-0.5">
