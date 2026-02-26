@@ -12,9 +12,10 @@ import PublishModal from '../components/PublishModal';
 import MagicResultModal from '../components/MagicResultModal';
 import ImageManager from '../components/ImageManager';
 import VideoEmbedModal from '../components/VideoEmbedModal';
+import TableCreatorModal from '../components/TableCreatorModal';
 import { publishPost } from '../lib/hive';
 import { polishText } from '../lib/magic';
-import { Copy, Smartphone, Monitor, Trash2, FileText, HelpCircle, Loader2, LayoutTemplate, Send, Menu } from 'lucide-react'; 
+import { Copy, Smartphone, Monitor, Trash2, FileText, HelpCircle, Loader2, LayoutTemplate, Send, Maximize2, Minimize2 } from 'lucide-react'; 
 import { Link } from 'react-router-dom';
 
 export default function Home() {
@@ -23,27 +24,21 @@ export default function Home() {
   // --- STATE ---
   const [templates, setTemplates] = useState([]);
   const [loadingTemplates, setLoadingTemplates] = useState(true);
-  const [magicResult, setMagicResult] = useState(null); // Stores AI result
-const [isMagicModalOpen, setIsMagicModalOpen] = useState(false);
-const [isRePolishing, setIsRePolishing] = useState(false); // For the 2nd pass
-const [isVideoModalOpen, setIsVideoModalOpen] = useState(false);
-const rawTextRef = useRef(''); 
+  const [magicResult, setMagicResult] = useState(null); 
+  const [isMagicModalOpen, setIsMagicModalOpen] = useState(false);
+  const [isRePolishing, setIsRePolishing] = useState(false); 
+  const [isVideoModalOpen, setIsVideoModalOpen] = useState(false);
+  const [isTableModalOpen, setIsTableModalOpen] = useState(false);
+  const rawTextRef = useRef(''); 
   
   const [selectedTemplate, setSelectedTemplate] = useState(() => {
     return localStorage.getItem('hive-studio-template') || '';
   });
 
- const [input, setInput] = useState(() => {
-    // If they have a saved draft, load it.
+  const [input, setInput] = useState(() => {
     const saved = localStorage.getItem('hive-studio-draft');
     if (saved) return saved;
-
-    // If new user, show a CLEAN start instead of code
-    return `# My New Post
-
-Start writing here...
-
-(Click "Magic Brush" to format, or the File icon above to load a template blueprint)`;
+    return `# My New Post\n\nStart writing here...\n\n(Click "Magic Brush" to format, or the File icon above to load a template blueprint)`;
   });
 
   const [isMobilePreview, setIsMobilePreview] = useState(false);
@@ -55,6 +50,12 @@ Start writing here...
   const [isPublishing, setIsPublishing] = useState(false);
   const [isMagicLoading, setIsMagicLoading] = useState(false);
   const [isImageModalOpen, setIsImageModalOpen] = useState(false);
+
+  // --- NEW STATE FOR MOBILE LAYOUT ---
+  // 'split' = 50/50 (Default)
+  // 'editor' = Editor 100%, Preview Hidden
+  // 'preview' = Preview 100%, Editor Hidden
+  const [mobileLayout, setMobileLayout] = useState('split');
 
   // --- EFFECTS ---
   useEffect(() => {
@@ -117,13 +118,10 @@ Start writing here...
 
   const handleCopy = () => {
     navigator.clipboard.writeText(outputHtml);
-
-     // --- TRACKING ---
     logEvent('copy_code', {
       username: username || 'anonymous',
       template: activeTemplateName
     });
-    // ----------------
     alert("HTML Copied! Ready to paste into Ecency/PeakD.");
   };
 
@@ -151,23 +149,19 @@ Start writing here...
     localStorage.removeItem('hive_user');
   };
 
-  // Updated to accept the data object from the modal
   const handlePublish = async (publishData) => {
     if (!username) return alert("Please login first!");
     
     setIsPublishing(true);
     try {
-      // 1. Publish to Blockchain
       const result = await publishPost(username, publishData, outputHtml);
       
-      // 2. Track Event (FIXED)
-      // We access tags from 'publishData.tags'
       logEvent('publish_success', {
         username: username,
         template: activeTemplateName,
         meta: { 
           frontend: 'hive-studio', 
-          tags: publishData.tags, // <--- The Fix
+          tags: publishData.tags, 
           community: publishData.community || 'blog'
         }
       });
@@ -188,25 +182,18 @@ Start writing here...
   const handleMagic = async () => {
     if (!input.trim()) return alert("Please write some text first!");
     
-    // 1. CACHE RAW TEXT IN REF (Immediate & Permanent)
     rawTextRef.current = input;
-
-    // Custom confirm dialog for Magic Brush
-    // Note: If you want to skip this confirm since we have the modal, you can.
-    // if (!confirm("Proceed with AI formatting?")) return; 
 
     setIsMagicLoading(true);
     try {
       const activeTemplateName = templates.find(t => t.id === selectedTemplate)?.name || "Standard";
 
-       // --- TRACKING ---
       logEvent('magic_brush_used', {
         username: username || 'anonymous',
         template: activeTemplateName,
-        meta: { length: input.length } // Track how long the text was
+        meta: { length: input.length } 
       });
-      // ----------------
-      // Pass ID if we have it, otherwise Name
+
       const aiResponse = await polishText(input, selectedTemplate || "standard");
       
       setMagicResult(aiResponse);
@@ -228,7 +215,7 @@ Start writing here...
     if (magicResult?.suggested_template_id) {
       const newId = magicResult.suggested_template_id;
       setSelectedTemplate(newId);
-      rePolish(newId); // Auto-repolish with new rules
+      rePolish(newId); 
     }
     setIsMagicModalOpen(false);
   };
@@ -239,7 +226,6 @@ Start writing here...
     setIsRePolishing(true);
   };
 
-  // Option 3: Keep Current (Just close)
   const handleKeepCurrent = () => {
     setIsMagicModalOpen(false);
   };
@@ -251,17 +237,10 @@ Start writing here...
     }
   };
 
-  
-
   const rePolish = async (newTemplateId) => {
     setIsMagicLoading(true); 
     try {
-      // 2. USE CACHED RAW TEXT
-      // Use the clean text we saved before the first AI pass
       const textToPolish = rawTextRef.current || input; 
-      
-      console.log("Re-Polishing with Template ID:", newTemplateId); // Debug Log
-      
       const newFormat = await polishText(textToPolish, newTemplateId);
       setInput(newFormat.formatted_text);
     } catch (e) {
@@ -274,28 +253,26 @@ Start writing here...
   };
 
   const handleImageInsert = (html) => {
-  const textarea = textareaRef.current;
-  if (!textarea) return;
-  const start = textarea.selectionStart;
-  const end = textarea.selectionEnd;
-  const text = textarea.value;
-  setInput(text.substring(0, start) + html + text.substring(end));
-};
+    const textarea = textareaRef.current;
+    if (!textarea) return;
+    const start = textarea.selectionStart;
+    const end = textarea.selectionEnd;
+    const text = textarea.value;
+    setInput(text.substring(0, start) + html + text.substring(end));
+  };
+
+  const handleTableInsert = (markdown) => {
+    // Reuse the same logic: Insert at cursor
+    handleImageInsert(markdown);
+  };
 
   const activeTemplateName = templates.find(t => t.id === selectedTemplate)?.name || "Loading...";
-
-  // Calculate word count
-  // 1. Trim whitespace from start/end
-  // 2. Split by any whitespace character (space, tab, newline)
-  // 3. Filter out empty strings to handle double spaces correctly
   const wordCount = input.trim() === '' ? 0 : input.trim().split(/\s+/).length;
 
-  // --- NEW UI RENDER ---
+  // --- UI RENDER ---
   return (
     <div className="h-screen flex flex-col bg-bg-app text-text-primary overflow-hidden font-sans">
       <HelpModal isOpen={isHelpOpen} onClose={() => setIsHelpOpen(false)} />
-      
-      {/* NEW MODAL */}
       <MagicResultModal 
         isOpen={isMagicModalOpen}
         onClose={() => setIsMagicModalOpen(false)}
@@ -304,97 +281,104 @@ Start writing here...
         onOpenGallery={handleOpenManualGallery}
         onKeepCurrent={handleKeepCurrent}
       />
-
       <TemplateGallery 
         isOpen={isGalleryOpen} 
         onClose={() => {
           setIsGalleryOpen(false);
-          setIsRePolishing(false); // Cancel magic mode if closed without picking
+          setIsRePolishing(false); 
         }}
         templates={templates}
         selectedId={selectedTemplate}
-        onSelect={handleTemplateSelect} // Use the new handler
+        onSelect={handleTemplateSelect} 
       />
-      
       <PublishModal 
         isOpen={isPublishModalOpen} 
         onClose={() => setIsPublishModalOpen(false)} 
         onPublish={handlePublish}
         isPublishing={isPublishing}
-        username={username} // <--- ADD THIS LINE
+        username={username} 
+      />
+      <ImageManager 
+        isOpen={isImageModalOpen} 
+        onClose={() => setIsImageModalOpen(false)}
+        onInsert={handleImageInsert}
+        username={username} 
+      />
+      <VideoEmbedModal 
+        isOpen={isVideoModalOpen}
+        onClose={() => setIsVideoModalOpen(false)}
+        onInsert={handleImageInsert} 
+      />
+      {/* Add this with other modals */}
+      <TableCreatorModal 
+        isOpen={isTableModalOpen}
+        onClose={() => setIsTableModalOpen(false)}
+        onInsert={handleTableInsert}
       />
 
-      <ImageManager 
-  isOpen={isImageModalOpen} 
-  onClose={() => setIsImageModalOpen(false)}
-  onInsert={handleImageInsert}
-  username={username} // Crucial: Pass username for folder structure
-/>
-
-<VideoEmbedModal 
-  isOpen={isVideoModalOpen}
-  onClose={() => setIsVideoModalOpen(false)}
-  onInsert={handleImageInsert} // Reusing the insert logic
-/>
-
-      {/* HEADER: Dark Panel */}
+      {/* HEADER */}
       <header className="bg-bg-panel border-b border-ui-border px-6 py-3 flex justify-between items-center shadow-lg z-20 shrink-0">
         <div className="flex items-center gap-3">
-  <Link to="/" className="flex items-center gap-3 hover:opacity-80 transition">
-    <div className="bg-brand-primary/10 p-2 rounded-lg border border-brand-primary/20">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-              <path d="M4 8L12 3L20 8V18L12 23L4 18V8Z" stroke="#E31337" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-            </svg>
-          </div>
-          <div>
-            <h1 className="text-lg font-bold text-text-primary tracking-tight leading-none">Hive Studio</h1>
-            <p className="text-[10px] text-text-muted uppercase tracking-widest font-semibold mt-0.5">Creator Terminal</p>
-          </div>
-           </Link>
+          <Link to="/" className="flex items-center gap-3 hover:opacity-80 transition">
+            <div className="bg-brand-primary/10 p-2 rounded-lg border border-brand-primary/20">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M4 8L12 3L20 8V18L12 23L4 18V8Z" stroke="#E31337" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+              </svg>
+            </div>
+            <div className="hidden md:block">
+              <h1 className="text-lg font-bold text-text-primary tracking-tight leading-none">Hive Studio</h1>
+              <p className="text-[10px] text-text-muted uppercase tracking-widest font-semibold mt-0.5">Creator Terminal</p>
+            </div>
+          </Link>
         </div>
         
         <div className="flex items-center gap-4">
           <LoginButton username={username} onLogin={handleLogin} onLogout={handleLogout} />
-          
-          <div className="h-6 w-px bg-ui-divider"></div>
-
-          {/* Template Selector Button */}
+          <div className="h-6 w-px bg-ui-divider hidden md:block"></div>
           <button 
             onClick={() => setIsGalleryOpen(true)}
             className="flex items-center gap-2 px-3 py-1.5 bg-bg-panel-soft hover:bg-ui-hover text-text-secondary hover:text-text-primary rounded-lg border border-ui-border transition text-sm group"
           >
             <LayoutTemplate size={14} className="text-text-muted group-hover:text-brand-primary transition-colors"/>
-            {loadingTemplates ? <Loader2 size={12} className="animate-spin" /> : activeTemplateName}
+            <span className="hidden md:inline">{loadingTemplates ? <Loader2 size={12} className="animate-spin" /> : activeTemplateName}</span>
           </button>
-
-          {/* Publish Button (Gradient Accent) */}
           <button 
             onClick={() => { if(!username) return alert("Login first!"); setIsPublishModalOpen(true); }}
-            className="flex items-center gap-2 bg-brand-accent hover:bg-brand-accent/90 text-white px-5 py-2 rounded-lg transition text-xs font-bold shadow-[0_0_15px_rgba(139,92,246,0.3)] active:scale-95"
+            className="flex items-center gap-2 bg-brand-accent hover:bg-brand-accent/90 text-white px-3 md:px-5 py-2 rounded-lg transition text-xs font-bold shadow-lg shadow-brand-accent/20 active:scale-95"
           >
-            <Send size={14} /> PUBLISH
+            <Send size={14} /> <span className="hidden md:inline">PUBLISH</span>
           </button>
         </div>
       </header>
 
       {/* MAIN WORKSPACE */}
-      {/* MAIN WORKSPACE */}
-      {/* Container: Flex Column on Mobile, Row on Desktop */}
       <main className="flex-1 flex flex-col md:flex-row overflow-hidden bg-bg-app p-0 md:p-4 gap-4">
         
         {/* LEFT: EDITOR PANEL */}
-        {/* FIX: Added 'h-1/2 md:h-full'. 
-            On mobile, it takes top 50%. On desktop, it takes full height. */}
-        <div className="w-full md:w-1/2 h-1/2 md:h-full flex flex-col bg-bg-panel rounded-none md:rounded-xl border-b md:border border-ui-border shadow-2xl overflow-hidden shrink-0">
+        {/* LOGIC: Hidden if layout is 'preview', Full if 'editor', Split if 'split' */}
+        <div className={`flex flex-col bg-bg-panel rounded-none md:rounded-xl border-b md:border border-ui-border shadow-2xl overflow-hidden shrink-0 transition-all duration-300
+          ${mobileLayout === 'split' ? 'w-full md:w-1/2 h-1/2 md:h-full' : ''}
+          ${mobileLayout === 'editor' ? 'w-full h-full' : ''}
+          ${mobileLayout === 'preview' ? 'hidden md:flex md:w-1/2 md:h-full' : ''}
+        `}>
           
-          {/* Editor Header Bar */}
           <div className="flex justify-between items-center px-4 py-2 border-b border-ui-border bg-bg-panel-soft shrink-0">
             <div className="flex items-center gap-3">
-               <div className="flex gap-1.5">
+               {/* Mobile Toggle Button */}
+               <button 
+                 onClick={() => setMobileLayout(mobileLayout === 'editor' ? 'split' : 'editor')}
+                 className="md:hidden p-1.5 bg-bg-editor border border-ui-border rounded text-brand-primary"
+                 title={mobileLayout === 'editor' ? "Restore Split View" : "Maximize Editor"}
+               >
+                 {mobileLayout === 'editor' ? <Minimize2 size={14}/> : <Maximize2 size={14}/>}
+               </button>
+
+               <div className="hidden md:flex gap-1.5">
                   <div className="w-2.5 h-2.5 rounded-full bg-red-500/20 border border-red-500/50"></div>
                   <div className="w-2.5 h-2.5 rounded-full bg-yellow-500/20 border border-yellow-500/50"></div>
                   <div className="w-2.5 h-2.5 rounded-full bg-green-500/20 border border-green-500/50"></div>
                </div>
+               
                <div className="h-4 w-px bg-ui-divider mx-1"></div>
                <button onClick={handleClear} title="Clear Editor" className="text-text-muted hover:text-brand-primary transition">
                   <Trash2 size={14} />
@@ -426,10 +410,10 @@ Start writing here...
                if (!username) return alert("Please login to upload images.");
                setIsImageModalOpen(true);
              }}
-             onVideo={() => setIsVideoModalOpen(true)}
+            onVideo={() => setIsVideoModalOpen(true)}
+             onTable={() => setIsTableModalOpen(true)}
           />
           
-          {/* The Editor Textarea */}
           <div className="flex-1 relative bg-bg-editor">
            <textarea
               ref={textareaRef}
@@ -449,15 +433,28 @@ Start writing here...
         </div>
 
         {/* RIGHT: PREVIEW PANEL */}
-        {/* FIX: Added 'h-1/2 md:h-full'. 
-            On mobile, it takes bottom 50%. On desktop, it takes full height. */}
-        <div className="w-full md:w-1/2 h-1/2 md:h-full flex flex-col bg-bg-panel-soft rounded-none md:rounded-xl border-t md:border border-ui-border shadow-xl overflow-hidden relative">
+        <div className={`flex flex-col bg-bg-panel-soft rounded-none md:rounded-xl border-t md:border border-ui-border shadow-xl overflow-hidden relative transition-all duration-300
+          ${mobileLayout === 'split' ? 'w-full md:w-1/2 h-1/2 md:h-full' : ''}
+          ${mobileLayout === 'preview' ? 'w-full h-full' : ''}
+          ${mobileLayout === 'editor' ? 'hidden md:flex md:w-1/2 md:h-full' : ''}
+        `}>
           
           <div className="flex justify-between items-center px-4 py-3 border-b border-ui-border bg-bg-panel shrink-0">
-            <label className="text-xs font-bold text-text-muted uppercase tracking-wider flex items-center gap-2">
-              <span className="w-2 h-2 rounded-full bg-status-success shadow-[0_0_8px_rgba(34,197,94,0.6)]"></span> 
-              PeakD Preview
-            </label>
+            <div className="flex items-center gap-2">
+              {/* Mobile Toggle Button */}
+              <button 
+                 onClick={() => setMobileLayout(mobileLayout === 'preview' ? 'split' : 'preview')}
+                 className="md:hidden p-1.5 bg-bg-editor border border-ui-border rounded text-brand-primary"
+                 title={mobileLayout === 'preview' ? "Restore Split View" : "Maximize Preview"}
+               >
+                 {mobileLayout === 'preview' ? <Minimize2 size={14}/> : <Maximize2 size={14}/>}
+               </button>
+
+              <label className="text-xs font-bold text-text-muted uppercase tracking-wider flex items-center gap-2">
+                <span className="w-2 h-2 rounded-full bg-status-success shadow-[0_0_8px_rgba(34,197,94,0.6)]"></span> 
+                PeakD Preview
+              </label>
+            </div>
             
             <div className="flex bg-bg-editor rounded-lg p-0.5 gap-1 border border-ui-border">
               <button 
@@ -477,7 +474,6 @@ Start writing here...
             </div>
           </div>
           
-          {/* Preview Canvas */}
           <div className={`flex-1 bg-bg-panel-soft relative transition-all duration-300 ${
             isMobilePreview 
               ? 'overflow-y-auto p-4 flex justify-center items-start' 

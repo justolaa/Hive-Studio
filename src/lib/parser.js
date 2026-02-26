@@ -1,16 +1,14 @@
 import { remark } from 'remark';
 import html from 'remark-html';
+import remarkGfm from 'remark-gfm'; // <--- NEW IMPORT
 
 export async function parseToHiveHtml(rawText, templateConfig) {
   if (!templateConfig) return "";
 
   const c = templateConfig;
   
-  // --- SECURITY FIX START ---
-  // Initialize processingText by stripping <script> tags immediately.
-  // This replaces the old "let processingText = rawText;" line.
+  // --- SECURITY FIX ---
   let processingText = rawText.replace(/<script\b[^>]*>([\s\S]*?)<\/script>/gim, "");
-  // --- SECURITY FIX END ---
 
   const placeholders = {};
   let placeholderIndex = 0;
@@ -28,7 +26,6 @@ export async function parseToHiveHtml(rawText, templateConfig) {
     const rawMarkdownA = sideA.trim();
     const rawMarkdownB = sideB.trim();
 
-    // The Right Column is wrapped in <blockquote> for the grey bar look
     const columnHtml = `
 <div class="${c.dualWrapper}">
 <div class="${c.left}">
@@ -49,8 +46,9 @@ ${rawMarkdownB}
     return `\n\n${key}\n\n`;
   });
 
-  // STEP 2: Convert rest to HTML
+  // STEP 2: Convert rest to HTML (Now with Tables!)
   const file = await remark()
+    .use(remarkGfm) // <--- ENABLE TABLES HERE
     .use(html, { sanitize: false }) 
     .process(processingText);
     

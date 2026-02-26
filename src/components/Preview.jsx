@@ -69,6 +69,36 @@ const HIVE_STYLES = `
       display: block; 
       margin: 20px auto; 
     }
+       /* TABLE STYLING */
+    table {
+      width: 100%;
+      max-width: 100%;
+      margin-bottom: 1rem;
+      border-collapse: collapse;
+      background-color: transparent;
+    }
+    
+    th, td {
+      padding: 0.75rem;
+      vertical-align: top;
+      border-top: 1px solid #dee2e6;
+    }
+    
+    thead th {
+      vertical-align: bottom;
+      border-bottom: 2px solid #dee2e6;
+      font-weight: bold;
+      text-align: left;
+    }
+    
+    tbody + tbody {
+      border-top: 2px solid #dee2e6;
+    }
+    
+    /* Striped rows for readability */
+    tbody tr:nth-of-type(odd) {
+      background-color: rgba(0, 0, 0, 0.05);
+    }
   </style>
 `;
 

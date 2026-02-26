@@ -1,10 +1,10 @@
 import { useState } from 'react';
 import { 
   Bold, Italic, Heading, Link, Quote, AlignLeft, AlignRight, AlignCenter, 
-  Columns, ChevronDown, Minus, Sparkles, Loader2, Image as ImageIcon, Video 
+  Columns, ChevronDown, Minus, Sparkles, Loader2, Image as ImageIcon, Video,Table
 } from 'lucide-react';
 
-export default function Toolbar({ onInsert, activeTemplate, onMagic, isMagicLoading, onImage, onVideo }) {
+export default function Toolbar({ onInsert, activeTemplate, onMagic, isMagicLoading, onImage, onVideo, onTable }) {
   const [showHeadingMenu, setShowHeadingMenu] = useState(false);
 
   // --- THE FIX ---
@@ -24,7 +24,7 @@ export default function Toolbar({ onInsert, activeTemplate, onMagic, isMagicLoad
   };
 
   return (
-    <div className="flex items-center justify-between p-2 bg-bg-panel border-b border-ui-border select-none">
+    <div className="flex flex-wrap items-center justify-between gap-y-2 p-2 bg-bg-panel border-b border-ui-border select-none">
       
       {/* LEFT: Formatting Tools */}
       <div className="flex items-center gap-1">
@@ -56,6 +56,7 @@ export default function Toolbar({ onInsert, activeTemplate, onMagic, isMagicLoad
           <button onClick={onImage} className="btn-tool" title="Upload/Gallery"><ImageIcon size={15} /></button>
           <button onClick={onVideo} className="btn-tool" title="Embed Video (YT/3Speak)"><Video size={15} /></button>
           <button onClick={() => onInsert('<blockquote>', '</blockquote>')} className="btn-tool" title="Quote"><Quote size={15} /></button>
+          <button onClick={onTable} className="btn-tool" title="Insert Table"><Table size={15} /></button>
           <button onClick={() => onInsert('<hr />\n', '')} className="btn-tool" title="Divider"><Minus size={15} /></button>
         </div>
 
