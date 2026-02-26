@@ -15,7 +15,7 @@ import VideoEmbedModal from '../components/VideoEmbedModal';
 import TableCreatorModal from '../components/TableCreatorModal';
 import { publishPost } from '../lib/hive';
 import { polishText } from '../lib/magic';
-import { Copy, Smartphone, Monitor, Trash2, FileText, HelpCircle, Loader2, LayoutTemplate, Send, Maximize2, Minimize2 } from 'lucide-react'; 
+import { Copy, Smartphone, Monitor, Trash2, FileText, HelpCircle, Loader2, LayoutTemplate, Send, Maximize2, Minimize2, Lock } from 'lucide-react'; 
 import { Link } from 'react-router-dom';
 
 export default function Home() {
@@ -296,7 +296,8 @@ export default function Home() {
         onClose={() => setIsPublishModalOpen(false)} 
         onPublish={handlePublish}
         isPublishing={isPublishing}
-        username={username} 
+        username={username}
+         onLogin={handleLogin} 
       />
       <ImageManager 
         isOpen={isImageModalOpen} 
@@ -332,7 +333,17 @@ export default function Home() {
           </Link>
         </div>
         
-        <div className="flex items-center gap-4">
+        <div className="flex items-center gap-2 md:gap-4">
+          
+          {/* NEW: Security Note (Only visible on Desktop to save space) */}
+          {!username && (
+            <div className="hidden lg:flex flex-col items-end mr-2">
+              <div className="flex items-center gap-1 text-[10px] text-green-400 font-bold bg-green-900/20 px-2 py-0.5 rounded-full border border-green-500/20">
+                <Lock size={10} /> Keys Secure
+              </div>
+              <span className="text-[9px] text-text-muted mt-0.5">We never store your keys</span>
+            </div>
+          )}
           <LoginButton username={username} onLogin={handleLogin} onLogout={handleLogout} />
           <div className="h-6 w-px bg-ui-divider hidden md:block"></div>
           <button 
@@ -342,8 +353,9 @@ export default function Home() {
             <LayoutTemplate size={14} className="text-text-muted group-hover:text-brand-primary transition-colors"/>
             <span className="hidden md:inline">{loadingTemplates ? <Loader2 size={12} className="animate-spin" /> : activeTemplateName}</span>
           </button>
+          {/* Publish Button */}
           <button 
-            onClick={() => { if(!username) return alert("Login first!"); setIsPublishModalOpen(true); }}
+            onClick={() => setIsPublishModalOpen(true)} // UNLOCKED: Open immediately
             className="flex items-center gap-2 bg-brand-accent hover:bg-brand-accent/90 text-white px-3 md:px-5 py-2 rounded-lg transition text-xs font-bold shadow-lg shadow-brand-accent/20 active:scale-95"
           >
             <Send size={14} /> <span className="hidden md:inline">PUBLISH</span>

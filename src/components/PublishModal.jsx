@@ -1,14 +1,14 @@
-import { useState, useEffect } from 'react';
-import { X, Send, Loader2, ChevronDown, ChevronUp, Plus, Users } from 'lucide-react';
-import { fetchUserCommunities } from '../lib/hive'; // Import fetcher
+import { useState } from 'react';
+import { X, Send, Loader2, ChevronDown, ChevronUp, Users, Lock, Key, Check } from 'lucide-react';
+import { fetchUserCommunities, loginWithKeychain } from '../lib/hive'; 
 
-export default function PublishModal({ isOpen, onClose, onPublish, isPublishing, username }) {
+export default function PublishModal({ isOpen, onClose, onPublish, isPublishing, username, onLogin }) {
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   
   // Community State
   const [communities, setCommunities] = useState([]);
-  const [selectedCommunity, setSelectedCommunity] = useState(''); // Empty string = My Blog
+  const [selectedCommunity, setSelectedCommunity] = useState('');
   const [loadingCommunities, setLoadingCommunities] = useState(false);
 
   // Tag Logic
@@ -17,19 +17,38 @@ export default function PublishModal({ isOpen, onClose, onPublish, isPublishing,
   
   const [showAdvanced, setShowAdvanced] = useState(false);
   const [payout, setPayout] = useState('50%');
+  
+  // Login State
+  const [isLoggingIn, setIsLoggingIn] = useState(false);
+  const [loginInput, setLoginInput] = useState(''); // NEW: For the inline input
 
-  // FETCH COMMUNITIES ON OPEN
-  useEffect(() => {
-    if (isOpen && username) {
+  // Fetch communities if logged in
+  if (isOpen && username && communities.length === 0 && !loadingCommunities) {
       setLoadingCommunities(true);
       fetchUserCommunities(username).then(data => {
         setCommunities(data);
         setLoadingCommunities(false);
       });
-    }
-  }, [isOpen, username]);
+  }
 
   if (!isOpen) return null;
+
+  // --- UPDATED LOGIN HANDLER ---
+  const triggerLogin = async () => {
+    // Check if user typed something
+    if (!loginInput.trim()) return alert("Please enter your username");
+
+    setIsLoggingIn(true);
+    try {
+      const user = loginInput.toLowerCase().trim();
+      await loginWithKeychain(user);
+      onLogin(user);
+    } catch (e) {
+      alert("Login Failed: " + e.message);
+    } finally {
+      setIsLoggingIn(false);
+    }
+  };
 
   const handleTagKeyDown = (e) => {
     if (e.key === 'Enter' || e.key === ' ' || e.key === ',') {
@@ -55,17 +74,79 @@ export default function PublishModal({ isOpen, onClose, onPublish, isPublishing,
 
   const handleSubmit = () => {
     if (!title.trim()) return alert("Title is required");
-    if (tags.length === 0) return alert("Add at least one tag (e.g. hive)");
+    if (tags.length === 0) return alert("Add at least one tag");
     
     onPublish({
       title,
       description,
       tags,
       payout,
-      community: selectedCommunity // Pass the selected ID (e.g., hive-123456)
+      community: selectedCommunity
     });
   };
 
+  // --- RENDER: LOGGED OUT STATE ---
+  if (!username) {
+    return (
+      <div className="fixed inset-0 bg-black/80 z-50 flex items-center justify-center p-4 backdrop-blur-sm font-sans">
+        <div className="bg-bg-panel rounded-xl shadow-2xl border border-ui-border max-w-md w-full overflow-hidden animate-in fade-in zoom-in duration-200">
+          
+          <div className="p-4 border-b border-ui-border flex justify-between items-center bg-bg-panel-soft">
+            <h2 className="font-bold text-text-primary flex items-center gap-2">
+              <Lock size={16} className="text-brand-accent" /> Authentication Required
+            </h2>
+            <button onClick={onClose} className="text-text-muted hover:text-brand-primary transition"><X size={20} /></button>
+          </div>
+
+          <div className="p-8 flex flex-col items-center text-center">
+            <div className="w-16 h-16 bg-brand-primary/10 rounded-full flex items-center justify-center mb-4 text-brand-primary border border-brand-primary/20">
+              <Key size={32} />
+            </div>
+            
+            <h3 className="text-xl font-bold text-white mb-2">Connect to Publish</h3>
+            <p className="text-text-secondary text-sm mb-6 leading-relaxed">
+              Enter your username to sign the transaction securely via Keychain.
+            </p>
+
+            {/* NEW: Inline Login Form */}
+            <div className="w-full flex flex-col gap-3 mb-6">
+              <input 
+                type="text" 
+                placeholder="Hive Username" 
+                className="w-full p-3 bg-bg-editor border border-ui-border rounded-lg text-text-primary focus:border-brand-primary focus:outline-none transition text-center font-bold"
+                value={loginInput}
+                onChange={(e) => setLoginInput(e.target.value)}
+                onKeyDown={(e) => e.key === 'Enter' && triggerLogin()}
+                autoFocus
+              />
+              <button 
+                onClick={triggerLogin}
+                disabled={isLoggingIn}
+                className="w-full py-3 bg-brand-primary hover:bg-brand-soft text-white rounded-lg font-bold transition shadow-lg shadow-brand-primary/20 flex justify-center items-center gap-2"
+              >
+                {isLoggingIn ? <Loader2 className="animate-spin"/> : <img src="https://hive.blog/images/hive-blog-logo.svg" className="w-5 h-5"/>}
+                {isLoggingIn ? "Connecting..." : "Login with Keychain"}
+              </button>
+            </div>
+
+            {/* TRUST BADGE */}
+            <div className="p-4 bg-bg-editor border border-ui-border rounded-lg text-left w-full">
+              <div className="flex items-center gap-2 mb-2">
+                <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse"></div>
+                <span className="text-[10px] font-bold text-green-400 uppercase tracking-wider">Security Guarantee</span>
+              </div>
+              <ul className="text-xs text-text-muted space-y-2">
+                <li className="flex gap-2 items-start"><CheckIcon /> Keys never leave your device.</li>
+                <li className="flex gap-2 items-start"><CheckIcon /> 0% platform fees.</li>
+              </ul>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // --- RENDER: LOGGED IN STATE ---
   return (
     <div className="fixed inset-0 bg-black/80 z-50 flex items-center justify-center p-4 backdrop-blur-sm font-sans">
       <div className="bg-bg-panel rounded-xl shadow-2xl border border-ui-border max-w-lg w-full overflow-hidden animate-in fade-in zoom-in duration-200 flex flex-col max-h-[90vh]">
@@ -81,7 +162,6 @@ export default function PublishModal({ isOpen, onClose, onPublish, isPublishing,
 
         <div className="p-6 space-y-5 overflow-y-auto custom-scrollbar">
           
-          {/* COMMUNITY SELECTOR (NEW) */}
           <div className="bg-bg-editor p-3 rounded-lg border border-ui-border flex flex-col gap-2">
             <label className="text-[10px] font-bold text-text-muted uppercase flex items-center gap-1">
               <Users size={12} /> Post Destination
@@ -105,7 +185,6 @@ export default function PublishModal({ isOpen, onClose, onPublish, isPublishing,
             </select>
           </div>
 
-          {/* TITLE */}
           <div>
             <label className="block text-[10px] font-bold text-brand-accent uppercase mb-1.5">Title</label>
             <input 
@@ -115,10 +194,10 @@ export default function PublishModal({ isOpen, onClose, onPublish, isPublishing,
               value={title}
               onChange={e => setTitle(e.target.value)}
               autoFocus
+              maxLength={255}
             />
           </div>
 
-          {/* DESCRIPTION */}
           <div>
             <label className="block text-[10px] font-bold text-text-muted uppercase mb-1.5">Short Description</label>
             <textarea 
@@ -127,10 +206,10 @@ export default function PublishModal({ isOpen, onClose, onPublish, isPublishing,
               placeholder="Snippet for previews..."
               value={description}
               onChange={e => setDescription(e.target.value)}
+              maxLength={500}
             />
           </div>
 
-          {/* TAGS */}
           <div>
             <label className="flex justify-between text-[10px] font-bold text-text-muted uppercase mb-1.5">
               <span>Tags</span>
@@ -159,7 +238,6 @@ export default function PublishModal({ isOpen, onClose, onPublish, isPublishing,
             </div>
           </div>
 
-          {/* ADVANCED */}
           <div className="border-t border-ui-border pt-2">
             <button 
               onClick={() => setShowAdvanced(!showAdvanced)}
@@ -189,7 +267,6 @@ export default function PublishModal({ isOpen, onClose, onPublish, isPublishing,
 
         </div>
 
-        {/* Footer */}
         <div className="p-4 bg-bg-panel-soft border-t border-ui-border flex justify-end gap-3">
           <button onClick={onClose} className="px-4 py-2 text-sm text-text-muted hover:text-text-primary font-medium">Cancel</button>
           <button 
@@ -205,4 +282,8 @@ export default function PublishModal({ isOpen, onClose, onPublish, isPublishing,
       </div>
     </div>
   );
+}
+
+function CheckIcon() {
+  return <svg className="w-3 h-3 text-green-400 mt-0.5" fill="none" stroke="currentColor" strokeWidth="3" viewBox="0 0 24 24"><path d="M20 6L9 17l-5-5"/></svg>;
 }

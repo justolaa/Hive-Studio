@@ -146,6 +146,13 @@ serve(async (req) => {
         Templates: ${templateContext}
         Task: Suggest best template ID.
 
+        --- DATA & TABLES --- 
+           - If you detect structured data (e.g. lists of prices, scores, comparisons), format it as a Markdown Table.
+           - Format: 
+             | Column 1 | Column 2 |
+             | --- | --- |
+             | Data | Data |
+
         OUTPUT JSON ONLY:
         {
           "formatted_text": "HTML_STRING",
