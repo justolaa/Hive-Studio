@@ -114,6 +114,17 @@ serve(async (req) => {
       prompt = `
         You are an API that outputs ONLY raw JSON. 
         The user is currently using the "${displayTemplateName}" template.
+
+
+          --- 🛡️ CONTENT INTEGRITY PROTOCOL (SUPREME LAW) ---
+        1. DO NOT FIX GRAMMAR. If user writes "I goin store", keep it exactly as is.
+        2. DO NOT SUMMARIZE. Never shorten paragraphs.
+        3. DO NOT ADD FLUFF. Do not add intro/outro sentences.
+        4. PERMITTED EXTRACTION: 
+           - You MAY copy headers to build a Table of Contents.
+           - You MAY move text items into tables.
+           - You MAY move text inside HTML tags.
+           - BUT you must NOT change the words themselves.
         
         --- BILINGUAL RULES (STRICT) ---
         If text is bilingual (e.g. English / Spanish):
@@ -134,13 +145,29 @@ serve(async (req) => {
         --- FORMATTING RULES ---
         ${formattingRules}
 
-        --- DIVIDERS ---
+        --- DIVIDER IMAGE RULES (AGGRESSIVE MATCHING) ---
         Library: ${dividerContext}
-        1. Pick best URL from list.
-        2. If no match, use 'general' tag. 
-        3. DO NOT invent URLs. 
-        4. Insert <center><img src="SELECTED_URL" /></center> between major topics 
-           (UNLESS Custom Rules say otherwise).
+        
+        1. KEYWORD MATCHING: 
+           - Scan the user's text for keywords.
+           - Compare them against the 'tags' arrays in the Library.
+           - Example: If text mentions "trees", "hiking", or "sun", MATCH the divider with tags ["nature", "travel"].
+           - Example: If text mentions "price", "market", "coins", MATCH the divider with tags ["finance", "crypto"].
+        
+        2. PRIORITIZE IMAGES: 
+           - You MUST prefer an image divider over a standard <hr />.
+           - If a specific match is found, use it.
+           - If NO specific match is found, look for a divider tagged "general", "standard", or "simple" and use that.
+        
+        3. PLACEMENT:
+           - Insert the divider BEFORE every <h2> Header (except the very first title).
+           - Insert the divider AFTER a [dual] block.
+        
+        4. HTML FORMAT:
+           - <center><img src="MATCHED_URL_FROM_LIBRARY" /></center>Insert <center><img src="SELECTED_URL" /></center> between major topics 
+           - DO NOT invent URLs. Use the exact URL from the JSON list.(UNLESS Custom Rules say otherwise).
+
+           
 
         --- SUGGESTION ---
         Templates: ${templateContext}
@@ -149,9 +176,14 @@ serve(async (req) => {
         --- DATA & TABLES --- 
            - If you detect structured data (e.g. lists of prices, scores, comparisons), format it as a Markdown Table.
            - Format: 
-             | Column 1 | Column 2 |
-             | --- | --- |
-             | Data | Data |
+             <table>
+<thead>
+<tr><th>column1</th><th>column2</th><th>column3</th></tr>
+</thead>
+<tbody>
+<tr><td>Data 1</td><td>Data 2</td><td>Data 3</td></tr>
+</tbody>
+</table>
 
         OUTPUT JSON ONLY:
         {
@@ -184,6 +216,13 @@ serve(async (req) => {
          TASK 3: AI RULES GENERATION
          - Analyze the layout. Does it use 'pull-left'? Does it use 'text-center'?
          - Write specific instructions for the AI on how to use this template (e.g., "Alternate images left and right").
+
+          --- CRITICAL RULE FOR "ai_prompt" GENERATION ---
+         When writing the 'ai_prompt' field:
+         1. You must write instructions for a Layout Engine, NOT a Copywriter.
+         2. FORBIDDEN phrases: "Write a summary", "Create a description", "Fill in details".
+         3. REQUIRED phrases: "Wrap existing text", "Format headers as", "If user provides data, wrap in...".
+         4. If the template has a 'Content Map' or 'Index', instruct the AI to "Extract headers from the user's text to build the index". Do not tell it to invent headers.
 
          OUTPUT JSON ONLY:
          {
