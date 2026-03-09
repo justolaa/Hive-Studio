@@ -67,7 +67,7 @@ export const publishPost = (username, { title, description, tags, payout, commun
     const jsonMetadata = {
       tags: tags,
       description: description,
-      app: "hivestudio.vercel.app/1.0",
+      app: "Hive-Studio",
       format: "html"
     };
 
