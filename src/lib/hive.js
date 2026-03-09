@@ -53,7 +53,7 @@ export const loginWithKeychain = (username) => {
 
 // 2. UPDATED PUBLISH LOGIC
 // Now accepts 'community' in the options object
-export const publishPost = (username, { title, description, tags, payout, community }, body) => {
+export const publishPost = (username, { title, description, tags, payout, community, thumbnail, allImages }, body) => {
   return new Promise((resolve, reject) => {
     if (!hasKeychain()) return reject(new Error("Keychain missing"));
 
@@ -64,15 +64,24 @@ export const publishPost = (username, { title, description, tags, payout, commun
       .replace(/\s+/g, '-')         
       + '-' + Date.now();           
 
-   const jsonMetadata = {
+    const jsonMetadata = {
       tags: tags,
       description: description,
-      app: "Hive-Studio", 
+      app: "hivestudio.vercel.app/1.0",
       format: "html"
     };
 
-    // LOGIC: If a community is selected, it becomes the parent_permlink.
-    // If not, the first tag becomes the parent_permlink (Posting to Blog).
+    // --- THUMBNAIL LOGIC ---
+    // Hive uses the first item in the 'image' array as the post thumbnail.
+    if (thumbnail) {
+      // Put the selected thumbnail first, then append the rest (without duplicating the thumbnail)
+      const otherImages = (allImages ||[]).filter(img => img !== thumbnail);
+      jsonMetadata.image = [thumbnail, ...otherImages];
+    } else if (allImages && allImages.length > 0) {
+      // Fallback if they didn't explicitly pick one
+      jsonMetadata.image = allImages;
+    }
+
     const parent_permlink = community ? community : (tags[0] || "hive");
 
     let max_accepted_payout = '1000000.000 HBD';
@@ -83,20 +92,20 @@ export const publishPost = (username, { title, description, tags, payout, commun
     if (payout === '100%') percent_hbd = 0;
     else if (payout === '0%') max_accepted_payout = '0.000 HBD';
 
-    const postOp = [
+    const postOp =[
       "comment",
       {
         parent_author: "", 
-        parent_permlink: parent_permlink, // Updated here
+        parent_permlink: parent_permlink, 
         author: username,
         permlink: permlink,
         title: title,
         body: body,
-        json_metadata: JSON.stringify(jsonMetadata)
+        json_metadata: JSON.stringify(jsonMetadata) // <-- Metadata now includes images
       }
     ];
 
-    const optionsOp = [
+    const optionsOp =[
       "comment_options",
       {
         author: username,
@@ -110,8 +119,7 @@ export const publishPost = (username, { title, description, tags, payout, commun
     ];
 
     window.hive_keychain.requestBroadcast(
-      username,
-      [postOp, optionsOp], 
+      username,[postOp, optionsOp], 
       "Posting",
       (response) => {
         if (response.success) {

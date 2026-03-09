@@ -13,6 +13,7 @@ import MagicResultModal from '../components/MagicResultModal';
 import ImageManager from '../components/ImageManager';
 import VideoEmbedModal from '../components/VideoEmbedModal';
 import TableCreatorModal from '../components/TableCreatorModal';
+import { PopupModal } from "react-calendly"
 import { publishPost } from '../lib/hive';
 import { polishText } from '../lib/magic';
 import { Copy, Smartphone, Monitor, Trash2, FileText, HelpCircle, Loader2, LayoutTemplate, Send, Maximize2, Minimize2, Lock } from 'lucide-react'; 
@@ -29,6 +30,7 @@ export default function Home() {
   const [isRePolishing, setIsRePolishing] = useState(false); 
   const [isVideoModalOpen, setIsVideoModalOpen] = useState(false);
   const [isTableModalOpen, setIsTableModalOpen] = useState(false);
+  const[isCalendlyOpen, setIsCalendlyOpen] = useState(false);
   const rawTextRef = useRef(''); 
   
   const [selectedTemplate, setSelectedTemplate] = useState(() => {
@@ -94,25 +96,35 @@ export default function Home() {
     const htmlCode = `\n<center><img src="${url}" /></center>\n`;
     const textarea = textareaRef.current;
     if (!textarea) return;
+    
     const start = textarea.selectionStart;
     const end = textarea.selectionEnd;
+    const currentScroll = textarea.scrollTop; // 1. SAVE SCROLL POSITION
+
     setInput(input.substring(0, start) + htmlCode + input.substring(end));
+    
     setTimeout(() => {
       textarea.focus();
       textarea.selectionStart = textarea.selectionEnd = start + htmlCode.length;
+      textarea.scrollTop = currentScroll; // 2. RESTORE SCROLL POSITION
     }, 10);
   };
 
   const handleToolbarInsert = (startTag, endTag) => {
     const textarea = textareaRef.current;
     if (!textarea) return;
+    
     const start = textarea.selectionStart;
     const end = textarea.selectionEnd;
     const text = textarea.value;
+    const currentScroll = textarea.scrollTop; // 1. SAVE SCROLL POSITION
+
     setInput(text.substring(0, start) + startTag + text.substring(start, end) + endTag + text.substring(end));
+    
     setTimeout(() => {
       textarea.focus();
       textarea.setSelectionRange(start + startTag.length, end + startTag.length || start + startTag.length);
+      textarea.scrollTop = currentScroll; // 2. RESTORE SCROLL POSITION
     }, 10);
   };
 
@@ -255,10 +267,19 @@ export default function Home() {
   const handleImageInsert = (html) => {
     const textarea = textareaRef.current;
     if (!textarea) return;
+    
     const start = textarea.selectionStart;
     const end = textarea.selectionEnd;
     const text = textarea.value;
+    const currentScroll = textarea.scrollTop; // 1. SAVE SCROLL POSITION
+
     setInput(text.substring(0, start) + html + text.substring(end));
+    
+    setTimeout(() => {
+      textarea.focus();
+      textarea.setSelectionRange(start + html.length, start + html.length);
+      textarea.scrollTop = currentScroll; // 2. RESTORE SCROLL POSITION
+    }, 10);
   };
 
   const handleTableInsert = (markdown) => {
@@ -297,7 +318,8 @@ export default function Home() {
         onPublish={handlePublish}
         isPublishing={isPublishing}
         username={username}
-         onLogin={handleLogin} 
+        onLogin={handleLogin}
+        htmlContent={outputHtml} // <--- NEW: Pass the HTML content so it can extract images!
       />
       <ImageManager 
         isOpen={isImageModalOpen} 
@@ -358,7 +380,7 @@ export default function Home() {
             onClick={() => setIsPublishModalOpen(true)} // UNLOCKED: Open immediately
             className="flex items-center gap-2 bg-brand-accent hover:bg-brand-accent/90 text-white px-3 md:px-5 py-2 rounded-lg transition text-xs font-bold shadow-lg shadow-brand-accent/20 active:scale-95"
           >
-            <Send size={14} /> <span className="hidden md:inline">PUBLISH</span>
+            <Send size={14} /> <span className="hidden md:inline">CONTINUE</span>
           </button>
         </div>
       </header>
@@ -438,8 +460,22 @@ export default function Home() {
             />
           </div>
           
-          <div className="px-4 py-1.5 bg-bg-panel border-t border-ui-border flex justify-between items-center text-[10px] text-text-muted">
+          {/* Editor Footer - Now includes your Hire Me CTA! */}
+          <div className="px-4 py-1.5 bg-bg-panel border-t border-ui-border flex justify-between items-center text-[10px] text-text-muted shrink-0">
              <span>Markdown Supported</span>
+             
+             {/* UPDATED: Now a button that opens the modal */}
+             <button 
+               onClick={() => setIsCalendlyOpen(true)}
+               className="flex items-center gap-1.5 text-green-400 hover:text-green-300 hover:underline transition-colors font-bold cursor-pointer"
+             >
+               <span className="relative flex h-1.5 w-1.5">
+                 <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
+                 <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-green-500"></span>
+               </span>
+               Available for Hire (AI & Web3 Developer)
+             </button>
+
              <span className="font-mono">{wordCount} words</span>
           </div>
         </div>
@@ -514,7 +550,22 @@ export default function Home() {
           </div>
         </div>
 
+ {/* NEW: The Calendly Popup Component */}
+      <PopupModal
+        url="https://calendly.com/idowuolamide81" // <-- PUT YOUR LINK HERE
+        pageSettings={{
+          backgroundColor: '0F1117', // Matches --color-bg-app
+          hideEventTypeDetails: false,
+          hideLandingPageDetails: false,
+          primaryColor: 'E31337',    // Matches Hive Red
+          textColor: 'E6EAF2'        // Matches --color-text-primary
+        }}
+        onModalClose={() => setIsCalendlyOpen(false)}
+        open={isCalendlyOpen}
+        rootElement={document.getElementById("root")}
+      />
       </main>
+      
     </div>
   );
 }

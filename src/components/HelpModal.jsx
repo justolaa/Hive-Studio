@@ -69,6 +69,19 @@ export default function HelpModal({ isOpen, onClose }) {
           >
             Got it, let's write!
           </button>
+
+            <div className="mt-8 p-4 bg-gradient-to-r from-bg-editor to-bg-panel border border-ui-border rounded-xl flex items-center justify-between">
+            <div>
+              <h4 className="text-sm font-bold text-white">Built by Olamide</h4>
+              <p className="text-xs text-text-muted mt-1">Full-Stack Web3 & AI Developer.</p>
+            </div>
+            <a 
+              href="mailto:idowuolamide81@gmail.com" 
+              className="px-4 py-2 bg-white text-black text-xs font-bold rounded-lg hover:bg-gray-200 transition"
+            >
+              Contact Me
+            </a>
+          </div>
         </div>
       </div>
     </div>

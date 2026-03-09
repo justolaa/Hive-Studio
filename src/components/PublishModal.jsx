@@ -1,8 +1,9 @@
-import { useState } from 'react';
-import { X, Send, Loader2, ChevronDown, ChevronUp, Users, Lock, Key, Check } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { X, Send, Loader2, ChevronDown, ChevronUp, Users, Lock, Key, Image as ImageIcon } from 'lucide-react';
 import { fetchUserCommunities, loginWithKeychain } from '../lib/hive'; 
 
-export default function PublishModal({ isOpen, onClose, onPublish, isPublishing, username, onLogin }) {
+// Added htmlContent prop so we can scan it for images
+export default function PublishModal({ isOpen, onClose, onPublish, isPublishing, username, onLogin, htmlContent }) {
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   
@@ -13,14 +14,39 @@ export default function PublishModal({ isOpen, onClose, onPublish, isPublishing,
 
   // Tag Logic
   const [tags, setTags] = useState([]);
-  const [tagInput, setTagInput] = useState('');
+  const[tagInput, setTagInput] = useState('');
   
   const [showAdvanced, setShowAdvanced] = useState(false);
-  const [payout, setPayout] = useState('50%');
+  const[payout, setPayout] = useState('50%');
   
-  // Login State
-  const [isLoggingIn, setIsLoggingIn] = useState(false);
-  const [loginInput, setLoginInput] = useState(''); // NEW: For the inline input
+  const[isLoggingIn, setIsLoggingIn] = useState(false);
+  const [loginInput, setLoginInput] = useState('');
+
+  // --- NEW: THUMBNAIL LOGIC ---
+  const [availableImages, setAvailableImages] = useState([]);
+  const[selectedThumbnail, setSelectedThumbnail] = useState('');
+
+  // When modal opens, extract images from HTML
+  useEffect(() => {
+    if (isOpen && htmlContent) {
+      // Regex to find all img src attributes
+      const imgRegex = /<img[^>]+src="([^">]+)"/g;
+      let match;
+      const images = [];
+      while ((match = imgRegex.exec(htmlContent)) !== null) {
+        images.push(match[1]);
+      }
+      
+      // Remove duplicates
+      const uniqueImages = [...new Set(images)];
+      setAvailableImages(uniqueImages);
+      
+      // Default to the first image if one exists and none is selected yet
+      if (uniqueImages.length > 0 && !selectedThumbnail) {
+        setSelectedThumbnail(uniqueImages[0]);
+      }
+    }
+  }, [isOpen, htmlContent]);
 
   // Fetch communities if logged in
   if (isOpen && username && communities.length === 0 && !loadingCommunities) {
@@ -33,11 +59,8 @@ export default function PublishModal({ isOpen, onClose, onPublish, isPublishing,
 
   if (!isOpen) return null;
 
-  // --- UPDATED LOGIN HANDLER ---
   const triggerLogin = async () => {
-    // Check if user typed something
     if (!loginInput.trim()) return alert("Please enter your username");
-
     setIsLoggingIn(true);
     try {
       const user = loginInput.toLowerCase().trim();
@@ -81,7 +104,9 @@ export default function PublishModal({ isOpen, onClose, onPublish, isPublishing,
       description,
       tags,
       payout,
-      community: selectedCommunity
+      community: selectedCommunity,
+      thumbnail: selectedThumbnail, // Pass the selected image
+      allImages: availableImages    // Pass all images for the metadata
     });
   };
 
@@ -90,29 +115,24 @@ export default function PublishModal({ isOpen, onClose, onPublish, isPublishing,
     return (
       <div className="fixed inset-0 bg-black/80 z-50 flex items-center justify-center p-4 backdrop-blur-sm font-sans">
         <div className="bg-bg-panel rounded-xl shadow-2xl border border-ui-border max-w-md w-full overflow-hidden animate-in fade-in zoom-in duration-200">
-          
           <div className="p-4 border-b border-ui-border flex justify-between items-center bg-bg-panel-soft">
             <h2 className="font-bold text-text-primary flex items-center gap-2">
               <Lock size={16} className="text-brand-accent" /> Authentication Required
             </h2>
             <button onClick={onClose} className="text-text-muted hover:text-brand-primary transition"><X size={20} /></button>
           </div>
-
           <div className="p-8 flex flex-col items-center text-center">
             <div className="w-16 h-16 bg-brand-primary/10 rounded-full flex items-center justify-center mb-4 text-brand-primary border border-brand-primary/20">
               <Key size={32} />
             </div>
-            
             <h3 className="text-xl font-bold text-white mb-2">Connect to Publish</h3>
             <p className="text-text-secondary text-sm mb-6 leading-relaxed">
               Enter your username to sign the transaction securely via Keychain.
             </p>
-
-            {/* NEW: Inline Login Form */}
             <div className="w-full flex flex-col gap-3 mb-6">
               <input 
                 type="text" 
-                placeholder="Hive Username" 
+                placeholder="Hive Username (e.g. justola)" 
                 className="w-full p-3 bg-bg-editor border border-ui-border rounded-lg text-text-primary focus:border-brand-primary focus:outline-none transition text-center font-bold"
                 value={loginInput}
                 onChange={(e) => setLoginInput(e.target.value)}
@@ -124,12 +144,10 @@ export default function PublishModal({ isOpen, onClose, onPublish, isPublishing,
                 disabled={isLoggingIn}
                 className="w-full py-3 bg-brand-primary hover:bg-brand-soft text-white rounded-lg font-bold transition shadow-lg shadow-brand-primary/20 flex justify-center items-center gap-2"
               >
-                {isLoggingIn ? <Loader2 className="animate-spin"/> : <img src="https://hive.blog/images/hive-blog-logo.svg" className="w-5 h-5"/>}
+                {isLoggingIn ? <Loader2 className="animate-spin"/> : <img src="https://hive.blog/images/hive-blog-logo.svg" className="w-5 h-5" alt="Hive"/>}
                 {isLoggingIn ? "Connecting..." : "Login with Keychain"}
               </button>
             </div>
-
-            {/* TRUST BADGE */}
             <div className="p-4 bg-bg-editor border border-ui-border rounded-lg text-left w-full">
               <div className="flex items-center gap-2 mb-2">
                 <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse"></div>
@@ -189,24 +207,48 @@ export default function PublishModal({ isOpen, onClose, onPublish, isPublishing,
             <label className="block text-[10px] font-bold text-brand-accent uppercase mb-1.5">Title</label>
             <input 
               type="text" 
+              maxLength={255}
               className="w-full p-3 bg-bg-editor border border-ui-border rounded-lg text-text-primary focus:border-brand-primary focus:outline-none transition font-bold"
               placeholder="My Awesome Post"
               value={title}
               onChange={e => setTitle(e.target.value)}
               autoFocus
-              maxLength={255}
             />
           </div>
+
+          {/* --- THUMBNAIL SELECTOR UI --- */}
+          {availableImages.length > 0 && (
+            <div>
+              <label className="block text-[10px] font-bold text-text-muted uppercase mb-1.5 flex items-center gap-1">
+                <ImageIcon size={12} /> Select Cover Image
+              </label>
+              <div className="flex gap-2 overflow-x-auto pb-2 custom-scrollbar">
+                {availableImages.map((imgUrl, idx) => (
+                  <img 
+                    key={idx}
+                    src={imgUrl}
+                    alt={`Thumbnail option ${idx + 1}`}
+                    onClick={() => setSelectedThumbnail(imgUrl)}
+                    className={`h-16 w-16 object-cover rounded-lg cursor-pointer border-2 flex-shrink-0 transition-all duration-200 ${
+                      selectedThumbnail === imgUrl 
+                        ? 'border-brand-primary opacity-100 shadow-[0_0_10px_rgba(227,19,55,0.3)]' 
+                        : 'border-transparent opacity-50 hover:opacity-80'
+                    }`}
+                  />
+                ))}
+              </div>
+            </div>
+          )}
 
           <div>
             <label className="block text-[10px] font-bold text-text-muted uppercase mb-1.5">Short Description</label>
             <textarea 
               rows="2"
+              maxLength={500}
               className="w-full p-3 bg-bg-editor border border-ui-border rounded-lg text-text-primary text-sm focus:border-brand-primary focus:outline-none transition resize-none"
               placeholder="Snippet for previews..."
               value={description}
               onChange={e => setDescription(e.target.value)}
-              maxLength={500}
             />
           </div>
 
