@@ -20,7 +20,7 @@ Instead of fighting markdown syntax, creators can focus purely on writing.
 https://hivestudio.vercel.app
 
 💬 Hive Community Discussion:  
-https:[Hive-Link](https://ecency.com/hive-139531/@justola1/yhhwaysbdz?referral=justola1)
+[Hive-Link](https://ecency.com/hive-139531/@justola1/yhhwaysbdz?referral=justola1)
 
 ---
 
