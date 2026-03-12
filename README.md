@@ -144,11 +144,14 @@ Only lightweight conversion analytics are used.
 
 # 🖼️ Screenshots
 
-```
-/screenshots/editor.png
-/screenshots/magic-brush.png
-/screenshots/layout-preview.png
-```
+### Editor
+![Editor](screenshots/editor.png)
+
+### Magic Brush AI
+![Magic Brush](screenshots/magic-brush.png)
+
+### Hive Post Preview
+![Preview](screenshots/layout-preview.png)
 
 ---
 
