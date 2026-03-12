@@ -2,8 +2,19 @@ import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2"
 import { GoogleGenerativeAI } from "npm:@google/generative-ai"
 
+const origin = req.headers.get('Origin') || '';
+
+// Define who is allowed to talk to your backend
+const allowedOrigins =[
+  'https://hivestudio.vercel.app', // Your live site
+  'http://localhost:5173'          // Your local testing site
+];
+
+// If the request comes from an allowed site, grant access. Otherwise, deny.
+const corsOrigin = allowedOrigins.includes(origin) ? origin : 'https://hivestudio.vercel.app';
+
 const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Origin': corsOrigin,
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 }
 
