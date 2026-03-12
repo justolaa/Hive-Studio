@@ -1,5 +1,7 @@
 # 🐝 Hive Studio
 
+![Hive Studio](screenshots/home.png)
+
 ![React](https://img.shields.io/badge/React-19-blue)
 ![Vite](https://img.shields.io/badge/Vite-fast-purple)
 ![Supabase](https://img.shields.io/badge/Supabase-backend-green)
@@ -16,6 +18,9 @@ Instead of fighting markdown syntax, creators can focus purely on writing.
 
 🌐 **Live Demo:**  
 https://hivestudio.vercel.app
+
+💬 Hive Community Discussion:  
+https:[Hive-Link](https://ecency.com/hive-139531/@justola1/yhhwaysbdz?referral=justola1)
 
 ---
 
@@ -138,8 +143,6 @@ Only lightweight conversion analytics are used.
 ---
 
 # 🖼️ Screenshots
-
-*(Add screenshots later)*
 
 ```
 /screenshots/editor.png
