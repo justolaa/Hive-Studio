@@ -1,22 +1,21 @@
-Yes — I already know a lot about **Hive Studio** from our past conversations, and the info you provided is strong. The main improvement needed is **positioning**: GitHub READMEs that attract attention usually emphasize **problem → solution → visuals → architecture → credibility**.
-
-Your draft is already good, but we can make it **more “killer” for GitHub visitors, recruiters, and developers**.
-
-Below is a **polished README you can copy directly**.
-
----
-
 # 🐝 Hive Studio
 
-**AI-Powered Markdown Editor for the Hive Blockchain**
+![React](https://img.shields.io/badge/React-19-blue)
+![Vite](https://img.shields.io/badge/Vite-fast-purple)
+![Supabase](https://img.shields.io/badge/Supabase-backend-green)
+![AI](https://img.shields.io/badge/AI-Gemini-orange)
+![License](https://img.shields.io/badge/license-MIT-black)
 
-Hive Studio is a professional web application that eliminates the biggest pain points of Web3 blogging: complex markdown formatting, bilingual layouts, and aesthetically structured posts.
+> **AI-Powered Markdown Editor for the Hive Blockchain**
 
-It includes an intelligent **AI Layout Engine ("Magic Brush")** that transforms raw text into **clean, Hive-ready HTML layouts** — without changing the author's original words.
+Hive Studio is a modern web application that solves one of the biggest problems in Web3 blogging: **writing and formatting complex markdown posts.**
+
+It features an **AI Layout Engine ("Magic Brush")** that automatically transforms raw text into **beautiful, Hive-compatible HTML layouts** without changing the author’s original words.
 
 Instead of fighting markdown syntax, creators can focus purely on writing.
 
-🌐 **Live Demo:** [https://hivestudio.vercel.app](https://hivestudio.vercel.app)
+🌐 **Live Demo:**  
+https://hivestudio.vercel.app
 
 ---
 
@@ -24,70 +23,69 @@ Instead of fighting markdown syntax, creators can focus purely on writing.
 
 ## 🪄 Magic Brush AI
 
-An AI-powered layout engine built using **Gemini 2.5 Flash Lite** that:
+The **Magic Brush AI** uses Google's **Gemini 2.5 Flash Lite** to intelligently structure content.
 
-* Detects headings and topics
-* Automatically structures content
-* Builds tables and sections
-* Generates bilingual layouts
-* Keeps the author’s **exact words unchanged**
+It can:
 
-Think of it as **“Prettier for Web3 blog posts.”**
+- Detect topics and headers
+- Auto-format markdown
+- Generate tables
+- Create bilingual layouts
+- Preserve the author's exact wording
 
----
-
-## 🎨 Dynamic Template System
-
-Hive Studio supports **custom creator templates** stored in a Supabase backend.
-
-Examples include:
-
-* Magazine layout
-* Crypto analyst report
-* Blog storytelling format
-* Dual-language post template
-
-Creators can instantly apply professional styling to any post.
+Think of it as **"Prettier for Hive blog posts."**
 
 ---
 
-## 🌍 First-Class Bilingual Support
+## 🎨 Dynamic Template Engine
 
-Hive has a strong **multilingual community**, but writing dual-language posts manually is painful.
+Hive Studio includes a template system that allows creators to instantly apply beautiful layouts.
 
-Hive Studio solves this with:
+Examples:
 
-* Side-by-side language columns
-* Automatic layout generation
-* Responsive mobile-friendly design
+- Magazine layout
+- Crypto analyst report
+- Story blog layout
+- Dual-language post layout
 
-Perfect for creators writing in **English + another language**.
+Templates are stored and managed using **Supabase**.
+
+---
+
+## 🌍 Dual-Language Support
+
+Many Hive creators write in **multiple languages**.
+
+Hive Studio makes this simple with:
+
+- Side-by-side language columns
+- Automatic formatting
+- Responsive mobile layout
 
 ---
 
 ## 🗂️ Integrated Media Manager
 
-Upload and embed content easily:
+Upload and embed media directly inside the editor:
 
-* Images
-* Short videos
-* YouTube embeds
-* 3Speak videos
+- Images
+- Short videos
+- YouTube embeds
+- 3Speak videos
 
-All media is stored in **Supabase Storage**, making the workflow seamless.
+Media files are stored in **Supabase Storage**.
 
 ---
 
 ## 🔗 Direct Blockchain Publishing
 
-Hive Studio connects directly with **Hive Keychain**, enabling:
+Hive Studio integrates with **Hive Keychain** to publish directly to the Hive blockchain.
 
-* Secure signing
-* Direct publishing
-* Zero transaction fees
-* No private keys stored
+Benefits:
 
-Everything happens **client-side** for maximum security.
+- Secure signing
+- Zero transaction fees
+- Private keys never leave the user's device
 
 ---
 
@@ -95,69 +93,63 @@ Everything happens **client-side** for maximum security.
 
 ## Frontend
 
-* React (Vite)
-* Tailwind CSS v4
-* Lucide Icons
-* Remark + Remark-GFM
-* Sandboxed iframe preview system
+- React (Vite)
+- Tailwind CSS v4
+- Lucide Icons
+- Remark
+- Remark-GFM
 
 ## Backend & Infrastructure
 
-* Supabase (PostgreSQL, Auth, Storage)
-* Supabase Edge Functions (Deno)
-* Vercel Hosting & Analytics
+- Supabase
+- PostgreSQL
+- Supabase Storage
+- Supabase Edge Functions
+- Vercel Hosting
 
 ## Web3 Integration
 
-* `@hiveio/keychain-sdk`
-* Hive Public API
-* Blockchain broadcasting
+- @hiveio/keychain-sdk
+- Hive Public API
 
-## AI
+## AI Integration
 
-* `@google/generative-ai`
-* Gemini 2.5 Flash Lite
+- @google/generative-ai
+- Gemini 2.5 Flash Lite
 
 ---
 
 # 🔒 Security & Privacy
 
-Hive Studio was designed with **Web3 security principles**.
+Hive Studio was built with **Web3 security principles**.
 
-**1. Keys Never Leave Your Device**
+### No Private Keys Stored
+Publishing is handled through **Hive Keychain**, meaning keys never touch the server.
 
-Publishing is handled entirely through **Hive Keychain**.
+### Secure AI Calls
+The Gemini API is accessed through **Supabase Edge Functions**, preventing API key exposure.
 
-**2. AI Keys Protected Server-Side**
+### XSS Protection
+The preview system uses a **sandboxed iframe** and sanitizes HTML before rendering.
 
-Gemini API calls are routed through **Supabase Edge Functions**, keeping credentials secure.
-
-**3. XSS Protection**
-
-The preview renderer uses a **strict sandboxed iframe** and HTML sanitization.
-
-**4. Privacy-Friendly Analytics**
-
-Custom lightweight analytics track only **conversion events** — no invasive tracking.
+### Privacy Friendly Analytics
+Only lightweight conversion analytics are used.
 
 ---
 
 # 🖼️ Screenshots
 
-*(Add real screenshots here later)*
+*(Add screenshots later)*
 
 ```
 /screenshots/editor.png
 /screenshots/magic-brush.png
-/screenshots/dual-language-layout.png
-/screenshots/templates.png
+/screenshots/layout-preview.png
 ```
 
 ---
 
 # ⚙️ Architecture Overview
-
-Hive Studio follows a **modern full-stack architecture**.
 
 ```
 User
@@ -170,41 +162,41 @@ User
  │
  ▼
 Supabase Backend
- ├── PostgreSQL (Templates)
- ├── Storage Buckets (Media)
- ├── Edge Functions (AI Gateway)
+ ├── PostgreSQL Database
+ ├── Storage Buckets
+ ├── Edge Functions
  │
  ▼
 Hive Blockchain
- └── Post broadcasting via Hive Keychain
+ └── Publishing via Hive Keychain
 ```
 
 ---
 
 # 🚀 Run Locally
 
-### 1️⃣ Clone the repository
+### Clone the repository
 
 ```bash
 git clone https://github.com/YOUR_USERNAME/hive-studio.git
 ```
 
-### 2️⃣ Install dependencies
+### Install dependencies
 
 ```bash
 npm install
 ```
 
-### 3️⃣ Configure environment variables
+### Setup environment variables
 
-Create a `.env` file:
+Create a `.env` file in the root directory.
 
 ```
 VITE_SUPABASE_URL=your_supabase_url
 VITE_SUPABASE_ANON_KEY=your_supabase_anon_key
 ```
 
-### 4️⃣ Run the dev server
+### Start development server
 
 ```bash
 npm run dev
@@ -212,39 +204,37 @@ npm run dev
 
 ---
 
-# 🎯 Why This Project Matters
+# 🎯 Why This Project Exists
 
-Web3 blogging platforms like Hive are powerful but **intimidating for new creators** because of markdown complexity and formatting friction.
+Web3 blogging platforms like **Hive** are powerful but difficult for new creators because of **markdown complexity**.
 
-Hive Studio bridges the gap by combining:
+Hive Studio bridges that gap by combining:
 
-* **AI automation**
-* **beautiful layouts**
-* **direct blockchain publishing**
+- AI formatting
+- Beautiful layouts
+- Direct blockchain publishing
 
-This dramatically lowers the barrier to entry for **Web3 content creation**.
+This makes **Web3 content creation dramatically easier.**
 
 ---
 
 # 👨‍💻 Author
 
 Built by **Olamide Idowu**
-Full-Stack Developer focused on **AI tools, Web3, and modern SaaS products**.
 
-* 🌐 Hive: [https://peakd.com/@justola1](https://peakd.com/@justola1)
-* 💻 GitHub: [https://github.com/YOUR_USERNAME](https://github.com/YOUR_USERNAME)
-* 📧 Email: [your_email@gmail.com](mailto:your_email@gmail.com)
-* 📅 Discovery Call: [https://calendly.com/YOUR_CALENDLY_USERNAME](https://calendly.com/YOUR_CALENDLY_USERNAME)
+Full-stack developer focused on **AI tools, Web3, and modern SaaS products.**
+
+Hive: https://peakd.com/@justola1  
+GitHub: https://github.com/justolaa  
+Email: idowuolamide81@gmail.com  
 
 ---
 
 # 🤝 Contributing
 
-Contributions, ideas, and feature suggestions are welcome.
+Contributions are welcome.
 
-If you'd like to improve Hive Studio:
-
-1. Fork the repo
+1. Fork the repository
 2. Create a feature branch
 3. Submit a pull request
 
@@ -254,22 +244,6 @@ If you'd like to improve Hive Studio:
 
 If you find this project useful:
 
-⭐ Star the repository
-🐝 Share with Hive creators
+⭐ Star the repository  
+🐝 Share it with Hive creators  
 🚀 Build something on top of it
-
----
-
-## Small GitHub Trick (very important)
-
-Add **these badges at the top** — they increase credibility instantly:
-
-```
-![React](https://img.shields.io/badge/React-19-blue)
-![Vite](https://img.shields.io/badge/Vite-fast-purple)
-![Supabase](https://img.shields.io/badge/Supabase-backend-green)
-![AI](https://img.shields.io/badge/AI-Gemini-orange)
-![License](https://img.shields.io/badge/license-MIT-black)
-```
-
-
