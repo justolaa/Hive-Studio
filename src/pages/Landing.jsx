@@ -94,7 +94,7 @@ export default function Landing() {
             Write Beautiful Hive Posts <br />
 
             <span className="text-transparent bg-clip-text bg-gradient-to-r from-brand-primary via-purple-500 to-brand-accent">
-              Without The Struggle
+              Effortlessly
             </span>
 
           </h1>

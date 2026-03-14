@@ -565,10 +565,6 @@ export default function Home() {
              <button onClick={handleCopy} className="text-text-muted hover:text-brand-primary transition flex items-center gap-1 text-xs font-bold">
                 <Copy size={14} /> Copy HTML
              </button>
-            
-             <button onClick={handleCopy} className="text-text-muted hover:text-brand-primary transition flex items-center gap-1 text-xs">
-                <Copy size={14} /> Copy HTML
-             </button>
           </div>
         </div>
 
