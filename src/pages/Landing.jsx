@@ -178,28 +178,25 @@ export default function Landing() {
       </div>
 
 
-      {/* PREVIEW */}
-
-      <div className="relative max-w-6xl mx-auto px-4 mb-32">
-
-        <div className="absolute inset-0 bg-brand-primary/20 blur-[100px] rounded-full opacity-50"></div>
-
-        <div className="relative bg-bg-panel border border-ui-border rounded-xl shadow-2xl overflow-hidden aspect-[16/9] flex items-center justify-center group">
-
-          <div className="absolute inset-0 bg-gradient-to-b from-transparent to-bg-app/90 z-10"></div>
-
-          <div className="text-center z-20">
-            <div className="text-6xl mb-4">🎨</div>
-            <h3 className="text-2xl font-bold text-white mb-2">
-              Visual Editor Preview
-            </h3>
-            <p className="text-text-muted">
-              Takes your Markdown and turns it into art.
-            </p>
+      {/* MOCKUP PREVIEW (Replaced with Arcade Demo) */}
+      <div className="relative max-w-5xl mx-auto px-4 mb-32 z-10">
+        {/* Glow effect behind the demo */}
+        <div className="absolute inset-0 bg-brand-primary/20 blur-[100px] rounded-full opacity-50 pointer-events-none"></div>
+        
+        {/* The Arcade Embed Container */}
+        <div className="relative bg-bg-panel border border-ui-border rounded-xl shadow-2xl p-2 md:p-4">
+          <div style={{ position: 'relative', paddingBottom: 'calc(46.925329428989755% + 41px)', height: '0', width: '100%' }}>
+            <iframe
+              src="https://demo.arcade.software/t9j8roh8VrCSNxyHwUcP?embed&embed_mobile=inline&embed_desktop=inline&show_copy_link=true"
+              title="Format and Preview a Bilingual Blog Post in Hive Studio"
+              frameBorder="0"
+              loading="lazy"
+              allowFullScreen
+              allow="clipboard-write"
+              style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', colorScheme: 'light', borderRadius: '8px' }}
+            />
           </div>
-
         </div>
-
       </div>
 
 

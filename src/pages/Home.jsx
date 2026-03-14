@@ -13,10 +13,11 @@ import MagicResultModal from '../components/MagicResultModal';
 import ImageManager from '../components/ImageManager';
 import VideoEmbedModal from '../components/VideoEmbedModal';
 import TableCreatorModal from '../components/TableCreatorModal';
+import DemoModal from '../components/DemoModal'
 import { PopupModal } from "react-calendly"
 import { publishPost } from '../lib/hive';
 import { polishText } from '../lib/magic';
-import { Copy, Smartphone, Monitor, Trash2, FileText, HelpCircle, Loader2, LayoutTemplate, Send, Maximize2, Minimize2, Lock } from 'lucide-react'; 
+import { Copy, Smartphone, Monitor, Trash2, FileText, HelpCircle, Loader2, LayoutTemplate, Send, Maximize2, Minimize2, Lock, PlayCircle } from 'lucide-react'; 
 import { Link } from 'react-router-dom';
 
 export default function Home() {
@@ -31,6 +32,7 @@ export default function Home() {
   const [isVideoModalOpen, setIsVideoModalOpen] = useState(false);
   const [isTableModalOpen, setIsTableModalOpen] = useState(false);
   const[isCalendlyOpen, setIsCalendlyOpen] = useState(false);
+  const [isDemoOpen, setIsDemoOpen] = useState(false);
   const rawTextRef = useRef(''); 
   
   const [selectedTemplate, setSelectedTemplate] = useState(() => {
@@ -321,6 +323,12 @@ export default function Home() {
         onLogin={handleLogin}
         htmlContent={outputHtml} // <--- NEW: Pass the HTML content so it can extract images!
       />
+
+      <DemoModal 
+        isOpen={isDemoOpen} 
+        onClose={() => setIsDemoOpen(false)} 
+      />
+
       <ImageManager 
         isOpen={isImageModalOpen} 
         onClose={() => setIsImageModalOpen(false)}
@@ -541,9 +549,23 @@ export default function Home() {
           </div>
           
           <div className="px-4 py-2 bg-bg-panel border-t border-ui-border flex justify-end gap-3 shrink-0 z-10">
+
+             {/* UPDATED: Now it triggers the Overlay Modal instead of a new tab */}
+             <button 
+               onClick={() => setIsDemoOpen(true)}
+               className="text-brand-accent hover:text-brand-soft transition flex items-center gap-1 text-xs font-bold mr-auto md:mr-4"
+             >
+                <PlayCircle size={14} />
+                Interactive Demo
+             </button>
+
              <button onClick={() => setIsHelpOpen(true)} className="text-text-muted hover:text-brand-primary transition flex items-center gap-1 text-xs">
                 <HelpCircle size={14} /> Help
              </button>
+             <button onClick={handleCopy} className="text-text-muted hover:text-brand-primary transition flex items-center gap-1 text-xs font-bold">
+                <Copy size={14} /> Copy HTML
+             </button>
+            
              <button onClick={handleCopy} className="text-text-muted hover:text-brand-primary transition flex items-center gap-1 text-xs">
                 <Copy size={14} /> Copy HTML
              </button>
