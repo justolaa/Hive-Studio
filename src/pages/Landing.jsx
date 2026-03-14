@@ -135,7 +135,22 @@ export default function Landing() {
             </a>
 
           </div>
-
+{/* 👇 PASTE THE PRODUCT HUNT BADGE HERE 👇 */}
+        <div className="mt-12 flex justify-center animate-fade-in hover:scale-105 transition-transform duration-300">
+          <a 
+            href="https://www.producthunt.com/products/hive-studio?embed=true&utm_source=badge-featured&utm_medium=badge&utm_campaign=badge-hive-studio" 
+            target="_blank" 
+            rel="noopener noreferrer"
+          >
+            <img 
+              src="https://api.producthunt.com/widgets/embed-image/v1/featured.svg?post_id=1098046&theme=dark&t=1773475897936" 
+              alt="Hive Studio - AI-powered formatting tool for Hive bloggers | Product Hunt" 
+              width="250" 
+              height="54" 
+            />
+          </a>
+        </div>
+        {/* 👆 END OF PRODUCT HUNT BADGE 👆 */}
 
           {/* SaaS Feature Badges */}
 
