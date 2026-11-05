@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
-import { X, Upload, Image as ImageIcon, Trash2, Loader2, Check, Video } from 'lucide-react';
+import { X, Upload, Image as ImageIcon, Trash2, Loader2, Check } from 'lucide-react';
 
 export default function ImageManager({ isOpen, onClose, onInsert, username }) {
   const [activeTab, setActiveTab] = useState('upload'); 
@@ -30,18 +30,15 @@ export default function ImageManager({ isOpen, onClose, onInsert, username }) {
     const file = e.target.files[0];
     if (!file) return;
 
-    // 1. LIMIT CHECK (15MB)
-    if (file.size > 15 * 1024 * 1024) {
-      return alert("File is too big! Max limit is 15MB for images/videos.");
+    // 1. STRICT LIMIT CHECK (Reduced from 15MB to 2MB)
+    if (file.size > 2 * 1024 * 1024) {
+      return alert("File is too big! Max limit is 2MB to save server bandwidth.");
     }
 
-    // 2. TYPE CHECK
-    const allowedTypes = [
-      'image/jpeg', 'image/png', 'image/gif', 'image/webp',
-      'video/mp4', 'video/webm' // Added Video Support
-    ];
+    // 2. STRICT TYPE CHECK (Removed Video Support)
+    const allowedTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
     if (!allowedTypes.includes(file.type)) {
-      return alert("Only JPG, PNG, GIF, WEBP images and MP4/WEBM videos are allowed.");
+      return alert("Only JPG, PNG, GIF, and WEBP images are allowed. No videos.");
     }
 
     setUploading(true);
@@ -60,12 +57,8 @@ export default function ImageManager({ isOpen, onClose, onInsert, username }) {
         .from('user-uploads')
         .getPublicUrl(filePath);
 
-      // INSERT LOGIC
-      if (file.type.startsWith('video/')) {
-        onInsert(`<center><video src="${publicUrl}" controls width="100%"></video></center>`);
-      } else {
-        onInsert(`<center><img src="${publicUrl}" /></center>`);
-      }
+      // INSERT LOGIC (Images only)
+      onInsert(`<center><img src="${publicUrl}" /></center>`);
       onClose();
       
     } catch (error) {
@@ -80,12 +73,7 @@ export default function ImageManager({ isOpen, onClose, onInsert, username }) {
       .from('user-uploads')
       .getPublicUrl(`${username}/${fileName}`);
       
-    // Basic extension check
-    if (fileName.endsWith('.mp4') || fileName.endsWith('.webm')) {
-      onInsert(`<center><video src="${publicUrl}" controls width="100%"></video></center>`);
-    } else {
-      onInsert(`<center><img src="${publicUrl}" /></center>`);
-    }
+    onInsert(`<center><img src="${publicUrl}" /></center>`);
     onClose();
   };
 
@@ -133,15 +121,15 @@ export default function ImageManager({ isOpen, onClose, onInsert, username }) {
               )}
               
               <p className="text-text-primary font-bold mb-2">
-                {uploading ? "Uploading..." : "Click to Upload Media"}
+                {uploading ? "Uploading..." : "Click to Upload Image"}
               </p>
               <p className="text-text-muted text-xs mb-6 text-center">
-                Images (JPG, PNG, GIF) or Videos (MP4)<br/>Max 15MB
+                Images ONLY (JPG, PNG, GIF)<br/>Max 2MB per file
               </p>
               
               <input 
                 type="file" 
-                accept="image/*,video/mp4,video/webm"
+                accept="image/jpeg, image/png, image/gif, image/webp"
                 onChange={handleFileChange}
                 disabled={uploading}
                 className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
@@ -159,19 +147,11 @@ export default function ImageManager({ isOpen, onClose, onInsert, username }) {
               ) : (
                 mediaFiles.map((file) => {
                    const { data } = supabase.storage.from('user-uploads').getPublicUrl(`${username}/${file.name}`);
-                   const isVideo = file.name.endsWith('.mp4') || file.name.endsWith('.webm');
 
                    return (
                      <div key={file.id} className="group relative aspect-square bg-bg-editor rounded-lg overflow-hidden border border-ui-border hover:border-brand-primary transition">
-                       {isVideo ? (
-                         <video src={data.publicUrl} className="w-full h-full object-cover" />
-                       ) : (
-                         <img src={data.publicUrl} className="w-full h-full object-cover" />
-                       )}
+                       <img src={data.publicUrl} className="w-full h-full object-cover" />
                        
-                       {/* Type Indicator */}
-                       {isVideo && <div className="absolute top-2 right-2 bg-black/50 text-white p-1 rounded"><Video size={12}/></div>}
-
                        <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition flex flex-col items-center justify-center gap-2">
                          <button 
                            onClick={() => selectMedia(file.name)}
@@ -179,14 +159,12 @@ export default function ImageManager({ isOpen, onClose, onInsert, username }) {
                          >
                            <Check size={12}/> Insert
                          </button>
-                         {/*<button 
+                         <button 
                            onClick={() => deleteMedia(file.name)}
                            className="text-red-400 hover:text-red-500 bg-white/10 p-1.5 rounded-full"
                          >
-                           <Trash2 size={14}/> 
-                           
-                         </button> */}
-                         
+                           <Trash2 size={14}/>
+                         </button>
                        </div>
                      </div>
                    );
